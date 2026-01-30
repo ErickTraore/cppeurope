@@ -16,21 +16,6 @@ services:
     ports:
       - "7003:7003"
 
-  media-backend:
-    image: node:20
-    working_dir: /usr/src/app
-    volumes:
-      - ./media-backend:/usr/src/app
-      - ./media-backend/.env.production:/usr/src/app/.env.production
-    environment:
-      NODE_ENV: production
-    command: bash -c "node server.prod.js"
-    depends_on:
-      - mariadb
-    restart: always
-    ports: 
-      - "7004:7004"
-
   mariadb:
     image: mariadb:11
     restart: always
@@ -48,7 +33,6 @@ services:
     image: nginx:stable
     depends_on:
       - user-backend
-      - media-backend
     ports:
       - "8082:80"
 
@@ -56,8 +40,6 @@ services:
       - ./nginx:/etc/nginx/
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./frontend/build:/usr/share/nginx/html:ro
-      - ./media-backend/public:/usr/src/app/public:ro
-      - ./media-backend/uploads:/usr/src/app/uploads
 
   adminer:
     image: adminer

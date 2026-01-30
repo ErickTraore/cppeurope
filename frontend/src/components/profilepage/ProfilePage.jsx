@@ -1,7 +1,7 @@
 // File: lespremices/frontend/src/components/profilepage/ProfilePage.jsx
 
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import {
   fetchProfileInfo,
   updateProfileInfo,
@@ -17,11 +17,11 @@ console.log('[ProfilePage] MEDIA_API =', MEDIA_API);
 const ProfilePage = () => {
   const dispatch = useDispatch();
 
-  // ---- Sélecteurs Redux ----
-  const profileInfo = useSelector((state) => state.profileInfo);
+  // ---- Sélecteurs Redux avec shallowEqual pour éviter les re-renders inutiles ----
+  const profileInfo = useSelector((state) => state.profileInfo, shallowEqual);
   const { loading, error, data } = profileInfo;
 
-  const profileMedia = useSelector((state) => state.profileMedia);
+  const profileMedia = useSelector((state) => state.profileMedia, shallowEqual);
   const { slots, loading: mediaLoading, error: mediaError } = profileMedia;
 
   console.log('[ProfilePage] profileInfo (entier) =', profileInfo);
@@ -70,7 +70,7 @@ const ProfilePage = () => {
     } else {
       console.log('[ProfilePage] Aucun data.id pour le moment (profil non chargé ou erreur)');
     }
-  }, [data, dispatch]);
+  }, [data?.id, dispatch]);
 
   // ---- 3) Écoute d’un éventuel event "tokenUpdated" ----
   useEffect(() => {
@@ -288,7 +288,7 @@ const ProfilePage = () => {
             {safeSlots.map((media) => (
               <div key={media.id} className="images__container__grid__card">
                 <img
-                  src={`https://lespremices.com${media.path}`}
+                  src={media.path}
                   alt="ProfileImage"
                   className="profile-image"
                 />
@@ -319,4 +319,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage;
+export default React.memo(ProfilePage);

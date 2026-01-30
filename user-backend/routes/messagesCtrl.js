@@ -3,7 +3,7 @@
 const fetch = (...args) => import('node-fetch').then(({
     default: fetch
 }) => fetch(...args));
-const MEDIA_BACKEND_URL = 'http://media-backend:7002/api/getMedia'; // ✅ URL correcte du media-backend
+const MEDIA_BACKEND_URL = process.env.MEDIA_BACKEND_URL || 'http://localhost:7004/api/media/getMedia';
 
 const models = require('../models');
 const asyncLib = require('async');

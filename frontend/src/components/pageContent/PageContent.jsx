@@ -13,7 +13,7 @@ import Presse from '../admin/presse/Presse';          // module admin (prod)
 import ProfilePage from '../profilepage/ProfilePage';
 import NewPresse from '../presse/Presse';             // nouveau module presse
 
-const PageContent = ({ activePage }) => {
+const PageContent = React.memo(({ activePage }) => {
   return (
     <div className="content" key={activePage}>
       {activePage === 'home' && <Home/>}
@@ -27,9 +27,9 @@ const PageContent = ({ activePage }) => {
       {activePage === 'presse' && <Presse />}          {/* ancien module admin */}
       {activePage === 'newpresse' && <NewPresse />}    {/* nouveau module */}
 
-      {activePage === 'profilepage' && <ProfilePage userId={1} />}
+      {activePage === 'profilepage' && <ProfilePage />}
     </div>
   );
-};
+});
 
 export default PageContent;

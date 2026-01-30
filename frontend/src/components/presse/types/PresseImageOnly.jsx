@@ -10,7 +10,7 @@ export default function PresseImageOnly({ presse, isActive, toggle, BASE_URL }) 
         {presse.media.map((file) => (
           <img
             key={file.id}
-            src={`${BASE_URL}${file.path.replace('/uploads', '')}`}
+            src={file.path}
             alt="media"
             className="presse__message__media__img"
           />

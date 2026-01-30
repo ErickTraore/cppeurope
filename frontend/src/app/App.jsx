@@ -1,6 +1,6 @@
 // File: lespremices/frontend/src/app/App.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import '../styles/main.scss';
 import HamburgerIcon from '../components/hamburgerIcon/HamburgerIcon';
@@ -16,7 +16,8 @@ import panneau1024 from '../assets/original/banniere-1024x142.png';
 import panneau1536 from '../assets/original/banniere-1440x200.png';
 import Footer from '../components/footer/Footer';
 import './App.css';
-import SessionManager, { useSessionTimer } from '../components/session/sessionManager.jsx';
+import SessionManager from '../components/session/sessionManager.jsx';
+import SessionTimer from '../components/sessionTimer/SessionTimer.jsx';
 import { jwtDecode } from 'jwt-decode';
 
 // ✅ Fonction de déconnexion
@@ -32,11 +33,15 @@ function App() {
   const [isOpen, setIsOpen] = useState(false);
   const [activePage, setActivePage] = useState('auth');
   const [panneau, setPanneau] = useState(panneau1536); // valeur par défaut
-  const sessionTimeLeft = useSessionTimer();
 
   const dispatch = useDispatch();
   const token = localStorage.getItem("accessToken");
-  const decodedUser = token ? jwtDecode(token) : null;
+  
+  // ✅ Memoïser le décodage du token pour éviter de recréer l'objet à chaque render
+  const decodedUser = useMemo(() => {
+    return token ? jwtDecode(token) : null;
+  }, [token]);
+  
   const isAdmin = decodedUser?.isAdmin === true;
 
   // ✅ Fonction centralisée
@@ -86,14 +91,14 @@ function App() {
     window.location.hash = page;
   };
 
-  const menuItems = [
+  // ✅ Memoïser menuItems pour éviter de recréer le tableau à chaque render
+  const menuItems = useMemo(() => [
     { key: 'home', label: 'Home' },
     ...(isAdmin ? [{ key: 'presse', label: 'Admin-presse' }] : []),
     { key: 'zoompage', label: 'Zoompage' },
     { key: 'contact', label: 'Contact' },
     { key: 'profilepage', label: 'ProfilePage' },
-
-  ];
+  ], [isAdmin]);
 
   return (
     <div className={`App ${isAuthenticated ? 'authenticated' : 'not-authenticated'}`}>
@@ -113,23 +118,7 @@ function App() {
         </div>
 
         <div className="App__header__actions">
-          <div className="App__header__actions__cadenas" onClick={() => handleLogout(dispatch)} style={{ cursor: 'pointer' }}>
-            {isAuthenticated && sessionTimeLeft > 0 ? (
-              <>
-                <i className="App__header__actions__cadenas__icon fas fa-lock-open"></i>
-                <span className="App__header__actions__cadenas__timer">
-                  {Math.floor(sessionTimeLeft / 60)}:{(sessionTimeLeft % 60).toString().padStart(2, '0')}
-                </span>
-              </>
-            ) : (
-              <>
-                <i className="App__header__actions__cadenas__icon App__header__actions__cadenas__icon--logout fas fa-lock"></i>
-                <span className="App__header__actions__cadenas__timer App__header__actions__cadenas__timer--logout">
-                  00:00
-                </span>
-              </>
-            )}
-          </div>
+          {isAuthenticated && <SessionTimer onLogout={() => handleLogout(dispatch)} />}
           
           <div className="App__header__actions__hamburger">
             {isAuthenticated && (
