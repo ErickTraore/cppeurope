@@ -1,12 +1,14 @@
 // File: frontend/src/components/presseLocale/PresseLocale.jsx
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { jwtDecode } from 'jwt-decode';
 import { fetchPresseLocale, filterPresseLocaleByCity } from "../../actions/presseLocaleActions";
 import PresseTextOnly from "../presse/types/PresseTextOnly";
 import PresseImageOnly from "../presse/types/PresseImageOnly";
 import PresseVideoOnly from "../presse/types/PresseVideoOnly";
 import PresseImageVideo from "../presse/types/PresseImageVideo";
+import AdminPresseLocaleManager from "./AdminPresseLocaleManager";
 import "../../styles/pages/MessagesList.scss";
 import "./PresseLocale.css";
 
@@ -35,6 +37,7 @@ export default function PresseLocale() {
   const presseLocale = useSelector((s) => s.presseLocale.filteredMessages);
   const selectedCity = useSelector((s) => s.presseLocale.selectedCity);
   const [localPresses, setLocalPresses] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [activeId, setActiveId] = useState(null);
   const toggle = (id) => setActiveId(prev => prev === id ? null : id);
@@ -46,6 +49,19 @@ export default function PresseLocale() {
 
   const videoRefs = useRef({});
   const [mediaLoaded, setMediaLoaded] = useState(false);
+
+  // Vérifier si admin
+  useMemo(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setIsAdmin(decoded?.isAdmin === true);
+      } catch (error) {
+        setIsAdmin(false);
+      }
+    }
+  }, []);
 
   // Récupérer les presses locales au montage
   useEffect(() => {
@@ -96,88 +112,92 @@ export default function PresseLocale() {
 
   return (
     <div className="presse">
-      <div className="presse__container">
-        <div className="presse__container__title">📍 Presse Locale</div>
+      {isAdmin ? (
+        <AdminPresseLocaleManager />
+      ) : (
+        <div className="presse__container">
+          <div className="presse__container__title">📍 Presse Locale</div>
 
-        {/* Filtre par ville */}
-        <div className="presse__container__filters">
-          {CITIES.map((city) => (
-            <button
-              key={city}
-              className={`presse__container__filters__btn ${selectedCity === city ? 'active' : ''}`}
-              onClick={() => handleCityFilter(city)}
-            >
-              {city.charAt(0).toUpperCase() + city.slice(1)}
-            </button>
-          ))}
-          {selectedCity && (
-            <button
-              className="presse__container__filters__btn presse__container__filters__btn--reset"
-              onClick={() => handleCityFilter(null)}
-            >
-              ✕ Tous
-            </button>
-          )}
-        </div>
+          {/* Filtre par ville */}
+          <div className="presse__container__filters">
+            {CITIES.map((city) => (
+              <button
+                key={city}
+                className={`presse__container__filters__btn ${selectedCity === city ? 'active' : ''}`}
+                onClick={() => handleCityFilter(city)}
+              >
+                {city.charAt(0).toUpperCase() + city.slice(1)}
+              </button>
+            ))}
+            {selectedCity && (
+              <button
+                className="presse__container__filters__btn presse__container__filters__btn--reset"
+                onClick={() => handleCityFilter(null)}
+              >
+                ✕ Tous
+              </button>
+            )}
+          </div>
 
-        {/* Liste des presses */}
-        <div className="presse__container__messagelist">
-          {!Array.isArray(presseLocale) ? (
-            <p className="presse__container__messagelist__error">⚠️ Erreur : données non disponibles.</p>
-          ) : presseLocale.length === 0 ? (
-            <div className="presse__container__messagelist__empty">
-              <h3 className="presse__container__messagelist__empty__nothing">📭 Aucune presse locale</h3>
-              <p className="presse__container__messagelist__empty__add">
-                {selectedCity ? `Aucun contenu pour ${selectedCity}` : "Aucun contenu disponible."}
-              </p>
-            </div>
-          ) : (
-            (localPresses.length > 0 ? localPresses : presseLocale).map((p) => {
-              const type = getPresseViewType(p);
+          {/* Liste des presses */}
+          <div className="presse__container__messagelist">
+            {!Array.isArray(presseLocale) ? (
+              <p className="presse__container__messagelist__error">⚠️ Erreur : données non disponibles.</p>
+            ) : presseLocale.length === 0 ? (
+              <div className="presse__container__messagelist__empty">
+                <h3 className="presse__container__messagelist__empty__nothing">📭 Aucune presse locale</h3>
+                <p className="presse__container__messagelist__empty__add">
+                  {selectedCity ? `Aucun contenu pour ${selectedCity}` : "Aucun contenu disponible."}
+                </p>
+              </div>
+            ) : (
+              (localPresses.length > 0 ? localPresses : presseLocale).map((p) => {
+                const type = getPresseViewType(p);
 
-              if (type === "text-only")
-                return <PresseTextOnly key={p.id} presse={p} isActive={isActive} toggle={toggle} />;
+                if (type === "text-only")
+                  return <PresseTextOnly key={p.id} presse={p} isActive={isActive} toggle={toggle} />;
 
-              if (type === "image-only")
-                return <PresseImageOnly key={p.id} presse={p} isActive={isActive} toggle={toggle} BASE_URL={BASE_URL} />;
+                if (type === "image-only")
+                  return <PresseImageOnly key={p.id} presse={p} isActive={isActive} toggle={toggle} BASE_URL={BASE_URL} />;
 
-              if (type === "video-only")
+                if (type === "video-only")
+                  return (
+                    <PresseVideoOnly
+                      key={p.id}
+                      presse={p}
+                      isActive={isActive}
+                      toggle={toggle}
+                      isVideoActive={isVideoActive}
+                      toggleVideo={toggleVideo}
+                      BASE_URL={BASE_URL}
+                      videoRefs={videoRefs}
+                    />
+                  );
+
+                if (type === "image-and-video")
+                  return (
+                    <PresseImageVideo
+                      key={p.id}
+                      presse={p}
+                      isActive={isActive}
+                      toggle={toggle}
+                      isVideoActive={isVideoActive}
+                      toggleVideo={toggleVideo}
+                      BASE_URL={BASE_URL}
+                      videoRefs={videoRefs}
+                    />
+                  );
+
                 return (
-                  <PresseVideoOnly
-                    key={p.id}
-                    presse={p}
-                    isActive={isActive}
-                    toggle={toggle}
-                    isVideoActive={isVideoActive}
-                    toggleVideo={toggleVideo}
-                    BASE_URL={BASE_URL}
-                    videoRefs={videoRefs}
-                  />
+                  <div key={p.id} className="presse__message presse__message--unknown">
+                    <p>⚠️ Format non reconnu.</p>
+                  </div>
                 );
-
-              if (type === "image-and-video")
-                return (
-                  <PresseImageVideo
-                    key={p.id}
-                    presse={p}
-                    isActive={isActive}
-                    toggle={toggle}
-                    isVideoActive={isVideoActive}
-                    toggleVideo={toggleVideo}
-                    BASE_URL={BASE_URL}
-                    videoRefs={videoRefs}
-                  />
-                );
-
-              return (
-                <div key={p.id} className="presse__message presse__message--unknown">
-                  <p>⚠️ Format non reconnu.</p>
-                </div>
-              );
-            })
-          )}
+              })
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

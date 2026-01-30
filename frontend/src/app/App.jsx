@@ -96,6 +96,7 @@ function App() {
     { key: 'home', label: 'Home' },
     ...(isAdmin ? [{ key: 'presse', label: 'Admin-presse' }] : []),
     { key: 'presse-locale', label: 'Presse Locale' },
+    ...(isAdmin ? [{ key: 'presse-locale-admin', label: 'Admin-presse-locale' }] : []),
     { key: 'zoompage', label: 'Zoompage' },
     { key: 'contact', label: 'Contact' },
     { key: 'profilepage', label: 'ProfilePage' },
