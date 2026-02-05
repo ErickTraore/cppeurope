@@ -1,8 +1,7 @@
-// File :cppeurope/user-backend/models/message.js
-
+// File: user-backend/models/presseGenerale.js
 
 module.exports = (sequelize, DataTypes) => {
-    const Message = sequelize.define('Message', {
+    const PresseGenerale = sequelize.define('PresseGenerale', {
         title: {
             type: DataTypes.STRING,
             allowNull: false
@@ -31,11 +30,13 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 0
         }
+    }, {
+        tableName: 'PresseGenerales'
     });
 
-    Message.associate = (models) => {
-        Message.belongsTo(models.User, { foreignKey: 'userId' });
+    PresseGenerale.associate = (models) => {
+        PresseGenerale.belongsTo(models.User, { foreignKey: 'userId' });
     };
 
-    return Message;
+    return PresseGenerale;
 };

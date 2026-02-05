@@ -39,7 +39,7 @@ services:
     volumes:
       - ./nginx:/etc/nginx/
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./frontend/build:/usr/share/nginx/html:ro
+      - ./frontend/build:/usr/share/nginx/html
 
   adminer:
     image: adminer

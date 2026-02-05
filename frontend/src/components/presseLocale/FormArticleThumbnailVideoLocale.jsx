@@ -1,13 +1,12 @@
-// File: frontend/src/components/messages/presse/FormArticleThumbnailVideo.jsx
-
+// File: frontend/src/components/presseLocale/FormArticleThumbnailVideoLocale.jsx
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { triggerFormatReset } from '../../../utils/formatController';
+import { triggerFormatReset } from '../../utils/formatController';
 
 const USER_API = process.env.REACT_APP_USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 
-const FormArticleThumbnailVideo = () => {
+const FormArticleThumbnailVideoLocale = ({ onReset }) => {
   const [newMessage, setNewMessage] = useState({
     title: '',
     content: '',
@@ -70,7 +69,6 @@ const FormArticleThumbnailVideo = () => {
       }
     } catch (error) {
       console.error(`Upload error (${endpoint}):`, error);
-      throw error;
     }
   };
 
@@ -92,7 +90,7 @@ const FormArticleThumbnailVideo = () => {
     setSuccessMessage('');
 
     try {
-      const messageResponse = await fetch(`${USER_API}/messages/new/`, {
+      const messageResponse = await fetch(`${USER_API}/messages/new`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -101,55 +99,37 @@ const FormArticleThumbnailVideo = () => {
         body: JSON.stringify({
           title: newMessage.title,
           content: newMessage.content,
-          categ: 'presse'
+          categ: 'presse-locale'
         }),
       });
 
-      if (!messageResponse.ok) throw new Error(`HTTP ${messageResponse.status}`);
+      triggerFormatReset();
+
+      if (!messageResponse.ok) {
+        throw new Error(`❌ Erreur HTTP ${messageResponse.status}`);
+      }
 
       const { id: newMessageId } = await messageResponse.json();
 
       await uploadFile(newMessage.image, 'image', newMessageId);
       await uploadFile(newMessage.video, 'video', newMessageId);
 
-      // Garder le spinner au minimum 4 secondes pour l'UX
-      await new Promise(resolve => setTimeout(resolve, 4000));
-
       setNewMessage({ title: '', content: '', image: null, video: null });
       if (imageInputRef.current) imageInputRef.current.value = '';
       if (videoInputRef.current) videoInputRef.current.value = '';
       setErrorMessage('');
-
-      // Arrêter le spinner
-      setIsLoading(false);
-
-      // Afficher le succès
-      setSuccessMessage('✅ Article publié avec succès !');
-
-      // Garder le message visible 3 secondes puis réinitialiser
-      setTimeout(() => {
-        setSuccessMessage('');
-        triggerFormatReset();
-      }, 3000);
+      setSuccessMessage('✅ Article publié avec succès ! Rechargez la page pour le voir.');
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
-      console.error('Envoi échoué:', error);
-      setErrorMessage('⚠️ Une erreur est survenue lors de l\'envoi.');
+      console.error("❌ Erreur lors de l'envoi:", error);
+      setErrorMessage("⚠️ Une erreur est survenue lors de l'envoi.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-      <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
       <input
         type="text"
         name="title"
@@ -165,87 +145,30 @@ const FormArticleThumbnailVideo = () => {
         placeholder="Contenu"
         required
       />
-
       <input
         type="file"
         name="image"
-        accept="image/*"
-        onChange={handleFileChange}
         ref={imageInputRef}
-        style={{ display: 'none' }}
+        onChange={handleFileChange}
+        accept="image/*"
+        placeholder="Image (Miniature)"
+        required
       />
       <input
         type="file"
         name="video"
-        accept="video/*"
-        onChange={handleFileChange}
         ref={videoInputRef}
-        style={{ display: 'none' }}
+        onChange={handleFileChange}
+        accept="video/*"
+        placeholder="Vidéo"
+        required
       />
-
-      <button type="button" onClick={() => imageInputRef.current?.click()}>
-        🖼️ Sélectionner une image
-      </button>
-      <button type="button" onClick={() => videoInputRef.current?.click()}>
-        🎥 Sélectionner une vidéo
-      </button>
-
-      {(newMessage.image || newMessage.video) && (
-        <div style={{
-          marginTop: '20px',
-          padding: '15px',
-          border: '1px solid #ccc',
-          borderRadius: '8px',
-          backgroundColor: '#f9f9f9'
-        }}>
-          <h4>🖼️🎬 Fichiers sélectionnés</h4>
-          {newMessage.image && imagePreviewUrl && (
-            <div style={{ marginBottom: '15px' }}>
-              <p><strong>Image :</strong> {newMessage.image.name} ({(newMessage.image.size / 1024 / 1024).toFixed(2)} Mo)</p>
-              <img
-                src={imagePreviewUrl}
-                alt="Aperçu miniature"
-                style={{ maxWidth: '300px', maxHeight: '200px', border: '1px solid #aaa' }}
-              />
-            </div>
-          )}
-          {newMessage.video && videoPreviewUrl && (
-            <div>
-              <p><strong>Vidéo :</strong> {newMessage.video.name} ({(newMessage.video.size / 1024 / 1024).toFixed(2)} Mo)</p>
-              <video
-                controls
-                src={videoPreviewUrl}
-                style={{ maxWidth: '300px', maxHeight: '200px', border: '1px solid #aaa' }}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       <button type="submit" disabled={isLoading}>
-        {isLoading ? '⏳ Envoi en cours...' : '📨 Publier'}
+        {isLoading ? '⏳ Envoi en cours...' : '🚀 Envoyer'}
       </button>
-
       {isLoading && (
-        <div className="spinner" style={{ 
-          marginTop: '15px', 
-          textAlign: 'center',
-          fontSize: '14px',
-          color: '#666'
-        }}>
-          <div style={{
-            border: '3px solid #f3f3f3',
-            borderTop: '3px solid #3498db',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            animation: 'spin 1s linear infinite',
-            margin: '10px auto'
-          }}></div>
-          <p>📤 Upload des fichiers en cours... Veuillez patienter.</p>
-        </div>
+        <p style={{ marginTop: '10px', color: '#666' }}>📤 Publication en cours...</p>
       )}
-
       {errorMessage && <p style={{ color: 'red' }}><strong>{errorMessage}</strong></p>}
       {successMessage && (
         <p style={{ 
@@ -254,14 +177,13 @@ const FormArticleThumbnailVideo = () => {
           border: '1px solid #c3e6cb',
           padding: '12px',
           borderRadius: '4px',
-          marginTop: '15px'
+          marginTop: '10px'
         }}>
-          <strong>{successMessage}</strong>
+          {successMessage}
         </p>
       )}
     </form>
-    </>
   );
 };
 
-export default FormArticleThumbnailVideo;
+export default FormArticleThumbnailVideoLocale;

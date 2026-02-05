@@ -16,7 +16,7 @@ import panneau1024 from '../assets/original/banniere-1024x142.png';
 import panneau1536 from '../assets/original/banniere-1440x200.png';
 import Footer from '../components/footer/Footer';
 import './App.css';
-import SessionManager from '../components/session/sessionManager.jsx';
+import SessionManager, { SessionProvider } from '../components/session/sessionManager.jsx';
 import SessionTimer from '../components/sessionTimer/SessionTimer.jsx';
 import { jwtDecode } from 'jwt-decode';
 
@@ -31,8 +31,18 @@ export const handleLogout = (dispatch) => {
 function App() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const [isOpen, setIsOpen] = useState(false);
-  const [activePage, setActivePage] = useState('auth');
+  // ✅ Initialiser activePage depuis le hash, pas par défaut à 'auth'
+  // ✅ Décoder l'URL (les accents comme 'é' deviennent '%C3%A9')
+  const [activePage, setActivePage] = useState(() => {
+    const hash = window.location.hash.slice(1);
+    try {
+      return decodeURIComponent(hash) || 'auth';
+    } catch (e) {
+      return hash || 'auth';
+    }
+  });
   const [panneau, setPanneau] = useState(panneau1536); // valeur par défaut
+  const [openSubmenu, setOpenSubmenu] = useState(null);
 
   const dispatch = useDispatch();
   const token = localStorage.getItem("accessToken");
@@ -72,7 +82,13 @@ function App() {
     window.addEventListener('resize', updatePanneau);
 
     const hash = window.location.hash.slice(1);
-    if (hash) setActivePage(hash);
+    if (hash) {
+      try {
+        setActivePage(decodeURIComponent(hash));
+      } catch (e) {
+        setActivePage(hash);
+      }
+    }
 
     if (token) {
       dispatch({ type: "LOGIN_SUCCESS", payload: token });
@@ -83,6 +99,25 @@ function App() {
     };
   }, [dispatch, token]);
 
+  // ✅ Écouter les changements de hash (utile pour Cypress et back/forward du navigateur)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      try {
+        const decodedHash = decodeURIComponent(hash);
+        if (decodedHash) setActivePage(decodedHash);
+      } catch (e) {
+        if (hash) setActivePage(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+
   const toggleMenu = () => setIsOpen(!isOpen);
 
   const navigateTo = (page) => {
@@ -91,20 +126,111 @@ function App() {
     window.location.hash = page;
   };
 
+  const toggleSubmenu = (key) => {
+    setOpenSubmenu((prev) => (prev === key ? null : key));
+  };
+
   // ✅ Memoïser menuItems pour éviter de recréer le tableau à chaque render
-  const menuItems = useMemo(() => [
-    { key: 'home', label: 'Home' },
-    ...(isAdmin ? [{ key: 'admin-presse-générale', label: 'Admin-presse-générale' }] : []),
-    { key: 'presse-locale', label: 'Presse Locale' },
-    ...(isAdmin ? [{ key: 'presse-locale-admin', label: 'Admin-presse-locale' }] : []),
-    { key: 'zoompage', label: 'Zoompage' },
-    { key: 'contact', label: 'Contact' },
-    { key: 'profilepage', label: 'ProfilePage' },
-  ], [isAdmin]);
+  const menuItems = useMemo(() => {
+    const presseGenerale = isAdmin
+      ? {
+          key: 'presse-generale',
+          label: 'Presse Générale',
+          defaultKey: 'newpresse',
+          children: [
+            { key: 'newpresse', label: 'Consulter' },
+            { key: 'admin-presse-générale', label: 'Créer' },
+            { key: 'home', label: 'Gérer' },
+          ],
+        }
+      : { key: 'newpresse', label: 'Presse Générale' };
+
+    return [
+      { key: 'home', label: 'Home' },
+      presseGenerale,
+      { key: 'presse-locale', label: 'Presse Locale' },
+      ...(isAdmin ? [{ key: 'presse-locale-admin', label: 'Admin-presse-locale' }] : []),
+      { key: 'zoompage', label: 'Zoompage' },
+      { key: 'contact', label: 'Contact' },
+      { key: 'profilepage', label: 'ProfilePage' },
+    ];
+  }, [isAdmin]);
+
+  const isMenuItemActive = (item) => {
+    if (item.key === activePage) return true;
+    return item.children?.some((child) => child.key === activePage) ?? false;
+  };
+
+  useEffect(() => {
+    const activeGroup = menuItems.find((item) =>
+      item.children?.some((child) => child.key === activePage)
+    );
+    if (activeGroup) {
+      setOpenSubmenu(activeGroup.key);
+    }
+  }, [activePage, menuItems]);
+
+  const renderMenuItems = () =>
+    menuItems.map((item) => {
+      const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+      const isActive = isMenuItemActive(item);
+
+      if (!hasChildren) {
+        return (
+          <li key={item.key} className={isActive ? 'active' : ''}>
+            <button type="button" className="menu-link" onClick={() => navigateTo(item.key)}>
+              {item.label}
+            </button>
+          </li>
+        );
+      }
+
+      return (
+        <li
+          key={item.key}
+          className={`has-submenu ${isActive ? 'active' : ''} ${openSubmenu === item.key ? 'open' : ''}`}
+        >
+          <div className="menu-item">
+            <button
+              type="button"
+              className="menu-link"
+              onClick={() => navigateTo(item.defaultKey || item.children[0].key)}
+            >
+              {item.label}
+            </button>
+            <button
+              type="button"
+              className="submenu-toggle"
+              aria-expanded={openSubmenu === item.key}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleSubmenu(item.key);
+              }}
+            >
+              {openSubmenu === item.key ? '▲' : '▼'}
+            </button>
+          </div>
+          <ul className="submenu">
+            {item.children.map((child) => (
+              <li key={child.key} className={activePage === child.key ? 'active' : ''}>
+                <button
+                  type="button"
+                  className="submenu-link"
+                  onClick={() => navigateTo(child.key)}
+                >
+                  {child.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </li>
+      );
+    });
 
   return (
-    <div className={`App ${isAuthenticated ? 'authenticated' : 'not-authenticated'}`}>
-      {isAuthenticated && <SessionManager />}
+    <SessionProvider>
+      <div className={`App ${isAuthenticated ? 'authenticated' : 'not-authenticated'}`}>
+        {isAuthenticated && <SessionManager />}
       <header className="App__header">
         <div className="App__header__logo">
           <img src={logo} alt="logo" className="App__header__logo__img" />
@@ -133,32 +259,21 @@ function App() {
       {isAuthenticated && (
         <nav className={`menu ${isOpen ? 'open' : ''}`}>
           <ul>
-            {menuItems.map(({ key, label }) => (
-              <li
-                key={key}
-                className={activePage === key ? 'active' : ''}
-                onClick={() => navigateTo(key)}
-              >
-                {label}
-              </li>
-            ))}
+            {renderMenuItems()}
           </ul>
         </nav>
       )}
 
       {isAuthenticated && (
         <ul className="horizontal-menu">
-          {menuItems.map(({ key, label }) => (
-            <li key={key} className={activePage === key ? 'active' : ''}>
-              <a href={`#${key}`} onClick={() => navigateTo(key)}>{label}</a>
-            </li>
-          ))}
+          {renderMenuItems()}
         </ul>
       )}
 
       <PageContent activePage={activePage} isAuthenticated={isAuthenticated} />
       <Footer />
     </div>
+    </SessionProvider>
   );
 }
 

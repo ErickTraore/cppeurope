@@ -9,7 +9,7 @@ import ContactForm from '../contactForm/ContactForm';
 import Attestation from '../attestation/Attestation';
 import Login from '../login/Login';
 import Zoompage from '../zoompage/Zoompage';
-import Presse from '../admin/presse/Presse';          // module admin (prod)
+import Presse from '../admin/presseGenerale/PresseGenerale';          // module admin (prod)
 import ProfilePage from '../profilepage/ProfilePage';
 import NewPresse from '../presse/Presse';             // nouveau module presse
 import PresseLocale from '../presseLocale/PresseLocale'; // presse locale
@@ -29,7 +29,7 @@ const PageContent = React.memo(({ activePage }) => {
       {activePage === 'admin-presse-générale' && <Presse />}  {/* admin presse générale */}
       {activePage === 'newpresse' && <NewPresse />}    {/* nouveau module */}
       {activePage === 'presse-locale' && <PresseLocale />}  {/* presse locale */}
-      {activePage === 'presse-locale-admin' && <AdminPresseLocale />}  {/* admin presse locale */}
+      {activePage === 'presse-locale-admin' && <AdminPresseLocale />}  {/* admin presse locale (CRUD) */}
 
       {activePage === 'profilepage' && <ProfilePage />}
     </div>

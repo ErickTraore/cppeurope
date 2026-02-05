@@ -1,6 +1,6 @@
 // File: frontend/src/components/session/SessionManager.jsx
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { useDispatch } from 'react-redux';
 import { jwtDecode } from 'jwt-decode';
 import Spinner from '../common/Spinner';
@@ -8,21 +8,88 @@ import Spinner from '../common/Spinner';
 const USER_API = process.env.REACT_APP_USER_API;
 const expiryWarning = parseInt(process.env.REACT_APP_SESSION_EXPIRY_WARNING, 10) || 60;
 
+// Contexte pour partager timeLeft entre SessionManager et SessionTimer
+const SessionContext = createContext({ timeLeft: 0 });
+
+export const useSessionTimer = () => {
+  const context = useContext(SessionContext);
+  return context?.timeLeft || 0;
+};
+
+// Provider à wrapper autour de App
+export const SessionProvider = ({ children }) => {
+  const [timeLeft, setTimeLeft] = useState(60); // 60s après login
+  const [isInitialSession, setIsInitialSession] = useState(true);
+
+  const getTokenRemainingTime = () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return 0;
+    try {
+      const decoded = jwtDecode(token);
+      const now = Math.floor(Date.now() / 1000);
+      if (!decoded.exp || typeof decoded.exp !== 'number') return 0;
+      return decoded.exp - now;
+    } catch {
+      return 0;
+    }
+  };
+
+  // Après login, démarrer à 60s puis attendre la prolongation
+  useEffect(() => {
+    if (isInitialSession) {
+      setTimeLeft(60);
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    } else {
+      // Après prolongation, afficher la vraie durée du token
+      const updateTimeLeft = () => {
+        const remaining = getTokenRemainingTime();
+        setTimeLeft(remaining > 0 ? remaining : 0);
+      };
+      updateTimeLeft();
+      const interval = setInterval(updateTimeLeft, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isInitialSession]);
+
+  // Méthode à appeler après "Prolonger"
+  const switchToRealToken = () => {
+    setIsInitialSession(false);
+  };
+
+  return (
+    <SessionContext.Provider value={{ timeLeft, setTimeLeft, switchToRealToken }}>
+      {children}
+    </SessionContext.Provider>
+  );
+};
+
 const SessionManager = () => {
   const dispatch = useDispatch();
-  const [timeLeft, setTimeLeft] = useState(0);
+  const context = useContext(SessionContext);
+  const timeLeft = context?.timeLeft || 0;
+  const setTimeLeft = context?.setTimeLeft || (() => {});
+  const switchToRealToken = context?.switchToRealToken || (() => {});
   const [showModal, setShowModal] = useState(false);
-  const [modalCountdown, setModalCountdown] = useState(expiryWarning);
   const [isExtending, setIsExtending] = useState(false);
+  const [hasExtended, setHasExtended] = useState(false);
 
   const modalTimerRef = useRef(null);
+  const hasInitialized = useRef(false);
 
   const handleLogout = useCallback(() => {
     dispatch({ type: 'LOGOUT' });
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     window.location.hash = 'auth';
-    window.location.reload();
   }, [dispatch]);
 
   const getTokenRemainingTime = () => {
@@ -38,73 +105,30 @@ const SessionManager = () => {
     }
   };
 
+  // Afficher la modale immédiatement après login
   useEffect(() => {
-    const syncRemaining = () => {
-      const remaining = getTokenRemainingTime();
-      if (remaining > 0) {
-        setTimeLeft(remaining);
-      } else {
-        console.warn("Token expiré après extension, mais minuterie relancée");
-      }
-    };
-
-    // Laisse le temps au token d’être stocké
-    const delay = setTimeout(syncRemaining, 100);
-
-    return () => clearTimeout(delay);
-  }, [isExtending]);
-
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setShowModal(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    if (timeLeft > 0 && !hasInitialized.current) {
+      hasInitialized.current = true;
+      setShowModal(true);
+      console.log('🔔 Modale de session affichée immédiatement après login, temps restant:', timeLeft);
+    }
   }, [timeLeft]);
 
   useEffect(() => {
-    if (showModal) {
-      setModalCountdown(expiryWarning);
-      modalTimerRef.current = setInterval(() => {
-        setModalCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(modalTimerRef.current);
-            handleLogout();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (showModal && timeLeft <= 0) {
+      // Si le temps est écoulé, déconnecter
+      handleLogout();
     }
-    return () => clearInterval(modalTimerRef.current);
-  }, [showModal, handleLogout]);
+  }, [showModal, timeLeft, handleLogout]);
+
+
 
   useEffect(() => {
-    const syncToken = () => {
-      const remaining = getTokenRemainingTime();
-      if (remaining <= 0) return handleLogout();
-      setTimeLeft(remaining);
-    };
-
-    window.addEventListener('storage', syncToken);
-    return () => window.removeEventListener('storage', syncToken);
-  }, [handleLogout]);
-
-  useEffect(() => {
-    if (timeLeft <= expiryWarning && timeLeft > 0 && !showModal) {
-      console.log('🔔 Session proche de l’expiration, affichage de la modale');
+    if (timeLeft <= expiryWarning && timeLeft > 0 && !showModal && !hasExtended) {
+      console.log('🔔 Session proche de l\'expiration, affichage de la modale');
       setShowModal(true);
     }
-  }, [timeLeft, showModal]);
+  }, [timeLeft, showModal, hasExtended]);
 
 
   const handleExtend = async () => {
@@ -141,19 +165,13 @@ const SessionManager = () => {
 
       dispatch({ type: 'LOGIN_SUCCESS', payload: data.accessToken });
 
-      const remaining = getTokenRemainingTime();
-      console.log('⏳ Temps restant calculé :', remaining);
-
-      if (!remaining || remaining <= 0) {
-        console.warn('❌ Token prolongé mais déjà expiré, déconnexion...');
-        return handleLogout();
-      }
-
-      setTimeLeft(remaining);
+      // Le timeLeft sera mis à jour automatiquement par le Provider
       setShowModal(false);
+      setHasExtended(true); // Empêcher la modale de se réafficher
       clearInterval(modalTimerRef.current); // 🛑 Stoppe le timer de la modale
       modalTimerRef.current = null;
       setIsExtending(false);
+      switchToRealToken(); // 🔄 Passer à la vraie durée du token pour le cadenas
       console.log('🟢 Session prolongée avec succès, modale fermée.');
     } catch (err) {
       console.error('❌ Erreur lors de la requête de prolongation :', err);
@@ -176,7 +194,7 @@ const SessionManager = () => {
         }}>
           <p>⏰ Votre session va expirer.</p>
           <p style={{ fontWeight: 'bold', color: 'red' }}>
-            Déconnexion automatique dans : {modalCountdown} secondes
+            Déconnexion automatique dans : {timeLeft} secondes
           </p>
           <button onClick={handleExtend} disabled={isExtending}>
             {isExtending ? <Spinner size="small" inline={true} /> : 'Prolonger'}
@@ -186,38 +204,6 @@ const SessionManager = () => {
       )}
     </>
   );
-};
-
-// Export du temps restant pour utilisation dans le header
-export const useSessionTimer = () => {
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    const getTokenRemainingTime = () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return 0;
-      try {
-        const decoded = jwtDecode(token);
-        const now = Math.floor(Date.now() / 1000);
-        if (!decoded.exp || typeof decoded.exp !== 'number') return 0;
-        return decoded.exp - now;
-      } catch {
-        return 0;
-      }
-    };
-
-    const updateTimer = () => {
-      const remaining = getTokenRemainingTime();
-      setTimeLeft(remaining > 0 ? remaining : 0);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  return timeLeft;
 };
 
 export default SessionManager;

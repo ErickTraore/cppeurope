@@ -126,7 +126,7 @@ module.exports = {
             const fields = req.query.fields || '*';
             const limit = parseInt(req.query.limit);
             const offset = parseInt(req.query.offset);
-            const order = req.query.order || 'title:ASC';
+            const order = req.query.order || 'createdAt:DESC';
             const categ = req.query.categ; // Filtre par catégorie
 
             console.log('Fields:', fields);
@@ -165,7 +165,14 @@ module.exports = {
             const enrichedMessages = await Promise.all(
                 messages.map(async (message) => {
                     try {
-                        const response = await fetch(`${MEDIA_BACKEND_URL}/${message.id}`);
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+                        
+                        const response = await fetch(`${MEDIA_BACKEND_URL}/${message.id}`, {
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeoutId);
+                        
                         const mediaData = await response.json();
 
                         return {
@@ -175,7 +182,7 @@ module.exports = {
                             media: mediaData || [] // ✅ Ajouter les médias au message
                         };
                     } catch (error) {
-                        console.error(`❌ Erreur lors de la récupération des médias pour le message ${message.id}:`, error);
+                        console.error(`❌ Erreur lors de la récupération des médias pour le message ${message.id}:`, error.message);
                         return {
                             ...message.get({
                                 plain: true
@@ -186,6 +193,7 @@ module.exports = {
                 })
             );
 
+            console.log(`✅ listMessages: ${enrichedMessages.length} articles retournés`);
             res.status(200).json(enrichedMessages);
         } catch (err) {
             console.log('❌ Erreur dans listMessages:', err);

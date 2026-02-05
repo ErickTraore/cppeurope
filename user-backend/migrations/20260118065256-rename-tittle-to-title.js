@@ -3,21 +3,25 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    // Vérifier si la colonne existe avant de la renommer
-    const [results] = await queryInterface.sequelize.query(
-      `SHOW COLUMNS FROM Messages LIKE 'tittle'`
-    );
-    if (results.length > 0) {
-      await queryInterface.renameColumn('Messages', 'tittle', 'title');
+    // Supprimer la colonne tittle (doublon avec faute de frappe)
+    // La colonne title existe déjà avec les bonnes données
+    try {
+      await queryInterface.removeColumn('Messages', 'tittle');
+      console.log('✅ Colonne tittle supprimée');
+    } catch (error) {
+      console.log('⚠️ Colonne tittle déjà supprimée ou n\'existe pas');
     }
   },
 
   async down (queryInterface, Sequelize) {
-    const [results] = await queryInterface.sequelize.query(
-      `SHOW COLUMNS FROM Messages LIKE 'title'`
-    );
-    if (results.length > 0) {
-      await queryInterface.renameColumn('Messages', 'title', 'tittle');
+    // Rollback : recréer tittle (au cas où, bien que ce soit un doublon)
+    try {
+      await queryInterface.addColumn('Messages', 'tittle', {
+        type: Sequelize.STRING(500),
+        allowNull: true
+      });
+    } catch (error) {
+      console.log('⚠️ Impossible de recréer tittle');
     }
   }
 };

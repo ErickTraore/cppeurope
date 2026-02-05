@@ -1,12 +1,12 @@
-// File: frontend/src/components/presseLocale/AdminPresseLocaleManager.jsx
+// File: frontend/src/components/admin/presse/Presse.jsx
 
 import React, { useState, useEffect } from 'react';
-import FormArticleLocale from './FormArticleLocale';
-import FormArticlePhotoLocale from './FormArticlePhotoLocale';
-import FormArticleVideoLocale from './FormArticleVideoLocale';
-import FormArticleThumbnailVideoLocale from './FormArticleThumbnailVideoLocale';
-import { setResetFormat } from '../../utils/formatController';
-import './AdminPresseLocaleManager.css';
+import FormPresseGle from './FormPresseGle';
+import FormPresseGlePhoto from './FormPresseGlePhoto';
+import FormPresseGleVideo from './FormPresseGleVideo';
+import FormPresseGleThumbnailVideo from './FormPresseGleThumbnailVideo';
+import { setResetFormat } from '../../../utils/formatController';
+import './Presse.scss';
 
 const formatDescriptions = {
     'article': '📝 Article texte sans média',
@@ -15,7 +15,8 @@ const formatDescriptions = {
     'article-thumbnail-video': '🖼️📹 Article avec miniature + vidéo',
 };
 
-const AdminPresseLocaleManager = () => {
+
+const PresseGenerale = () => {
     const [selectedFormat, setSelectedFormat] = useState('');
 
     const handleReset = () => {
@@ -27,7 +28,7 @@ const AdminPresseLocaleManager = () => {
 
     return (
         <div className="presse-wrapper">
-            <h2 className="presse-title">📍 Publication Presse Locale</h2>
+            <h2 className="presse-title">📰 Publication Presse</h2>
 
             {!selectedFormat && (
                 <>
@@ -55,10 +56,10 @@ const AdminPresseLocaleManager = () => {
                     </p>
 
                     <div className="presse-form-container">
-                        {selectedFormat === 'article' && <FormArticleLocale onReset={handleReset} />}
-                        {selectedFormat === 'article-photo' && <FormArticlePhotoLocale onReset={handleReset} />}
-                        {selectedFormat === 'article-video' && <FormArticleVideoLocale onReset={handleReset} />}
-                        {selectedFormat === 'article-thumbnail-video' && <FormArticleThumbnailVideoLocale onReset={handleReset} />}
+                        {selectedFormat === 'article' && <FormPresseGle onReset={handleReset} />}
+                        {selectedFormat === 'article-photo' && <FormPresseGlePhoto onReset={handleReset} />}
+                        {selectedFormat === 'article-video' && <FormPresseGleVideo onReset={handleReset} />}
+                        {selectedFormat === 'article-thumbnail-video' && <FormPresseGleThumbnailVideo onReset={handleReset} />}
                     </div>
 
                     <button onClick={handleReset} className="presse-reset-button">
@@ -70,4 +71,4 @@ const AdminPresseLocaleManager = () => {
     );
 };
 
-export default AdminPresseLocaleManager;
+export default PresseGenerale;

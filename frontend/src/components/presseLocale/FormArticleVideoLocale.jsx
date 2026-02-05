@@ -1,19 +1,19 @@
-// File: frontend/src/components/admin/presse/FormArticle.jsx
+// File: frontend/src/components/presseLocale/FormArticleVideoLocale.jsx
 
-
-import React, { useState } from 'react';
-
+import React, { useState, useRef } from 'react';
 const USER_API = process.env.REACT_APP_USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 
-const FormArticle = () => {
+const FormArticleVideoLocale = ({ onReset }) => {
   const [newMessage, setNewMessage] = useState({
     title: '',
     content: '',
+    video: null,
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleInputChange = (e) => {
     setNewMessage({ ...newMessage, [e.target.name]: e.target.value });
@@ -21,11 +21,42 @@ const FormArticle = () => {
     setSuccessMessage('');
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log('✅ Vidéo sélectionnée :', file);
+      setNewMessage((prevState) => ({ ...prevState, video: file }));
+    } else {
+      console.error('❌ Aucune vidéo sélectionnée.');
+    }
+  };
+
+  const uploadVideo = async (file, messageId) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('messageId', messageId);
+
+    try {
+      const response = await fetch(`${MEDIA_API}/uploadVideo`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`❌ Erreur upload vidéo: ${response.status}`);
+      }
+
+      console.log('✅ Vidéo envoyée avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'upload de la vidéo:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!newMessage.title || !newMessage.content) {
-      setErrorMessage('⚠️ Un titre et un contenu sont obligatoires.');
+    if (!newMessage.title || !newMessage.content || !newMessage.video) {
+      setErrorMessage('⚠️ Titre, contenu et vidéo sont obligatoires.');
       return;
     }
 
@@ -39,7 +70,7 @@ const FormArticle = () => {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`${USER_API}/messages/new`, {
+      const messageResponse = await fetch(`${USER_API}/messages/new`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -48,15 +79,20 @@ const FormArticle = () => {
         body: JSON.stringify({
           title: newMessage.title,
           content: newMessage.content,
-          categ: 'presse'
+          categ: 'presse-locale'
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`❌ Erreur HTTP ${response.status}`);
+      if (!messageResponse.ok) {
+        throw new Error(`❌ Erreur HTTP ${messageResponse.status}`);
       }
 
-      setNewMessage({ title: '', content: '' });
+      const { id: newMessageId } = await messageResponse.json();
+
+      await uploadVideo(newMessage.video, newMessageId);
+
+      setNewMessage({ title: '', content: '', video: null });
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setErrorMessage('');
       setSuccessMessage('✅ Article publié avec succès ! Rechargez la page pour le voir.');
       setTimeout(() => setSuccessMessage(''), 5000);
@@ -85,6 +121,14 @@ const FormArticle = () => {
         placeholder="Contenu"
         required
       />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="video/*"
+        placeholder="Vidéo"
+        required
+      />
       <button type="submit" disabled={isLoading}>
         {isLoading ? '⏳ Envoi en cours...' : '🚀 Envoyer'}
       </button>
@@ -99,13 +143,13 @@ const FormArticle = () => {
           border: '1px solid #c3e6cb',
           padding: '12px',
           borderRadius: '4px',
-          marginTop: '15px'
+          marginTop: '10px'
         }}>
-          <strong>{successMessage}</strong>
+          {successMessage}
         </p>
       )}
     </form>
   );
 };
 
-export default FormArticle;
+export default FormArticleVideoLocale;

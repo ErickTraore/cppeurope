@@ -1,12 +1,10 @@
-// File: frontend/src/components/admin/presse/FormArticle.jsx
-
+// File: frontend/src/components/presseLocale/FormArticleLocale.jsx
 
 import React, { useState } from 'react';
 
 const USER_API = process.env.REACT_APP_USER_API;
-const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 
-const FormArticle = () => {
+const FormArticleLocale = ({ onReset }) => {
   const [newMessage, setNewMessage] = useState({
     title: '',
     content: '',
@@ -48,7 +46,7 @@ const FormArticle = () => {
         body: JSON.stringify({
           title: newMessage.title,
           content: newMessage.content,
-          categ: 'presse'
+          categ: 'presse-locale'
         }),
       });
 
@@ -99,13 +97,13 @@ const FormArticle = () => {
           border: '1px solid #c3e6cb',
           padding: '12px',
           borderRadius: '4px',
-          marginTop: '15px'
+          marginTop: '10px'
         }}>
-          <strong>{successMessage}</strong>
+          {successMessage}
         </p>
       )}
     </form>
   );
 };
 
-export default FormArticle;
+export default FormArticleLocale;
