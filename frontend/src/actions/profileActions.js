@@ -60,8 +60,6 @@ export const fetchProfileInfo = (id) => async (dispatch) => {
 }
 
 export const createFullProfile = ({ profileInfoCreate = {}, profileMediaCreate = [] }) => async (dispatch) => {
-  const token = localStorage.getItem('accessToken');
-
   // 🔹 Création du profil utilisateur
   if (Object.keys(profileInfoCreate).length > 0) {
     dispatch({ type: CREATE_PROFILEINFO_REQUEST });
@@ -185,8 +183,11 @@ export const fetchProfileMedia = (profileId) => async (dispatch) => {
     return;
   }
 
+  const url = `${MEDIA_API}/mediaProfile/${profileId}`;
+  console.log('[fetchProfileMedia] GET', url, 'profileId=', profileId);
+
   try {
-    const response = await fetch(`${MEDIA_API}/mediaProfile/${profileId}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -197,7 +198,22 @@ export const fetchProfileMedia = (profileId) => async (dispatch) => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Erreur récupération médias');
 
-    dispatch({ type: FETCH_PROFILEMEDIA_SUCCESS, payload: data });
+    // Debug : réponse complète de l'API (voir onglet Console au chargement du profil)
+    console.log('[fetchProfileMedia] Réponse brute:', JSON.stringify(data).slice(0, 500), '| type:', Array.isArray(data) ? 'array' : typeof data, Array.isArray(data) ? `length=${data.length}` : (data ? `keys=[${Object.keys(data).join(', ')}]` : ''));
+
+    // Normaliser la réponse : tableau ou objet avec liste de médias
+    const slots = Array.isArray(data)
+      ? data
+      : (data?.slots ?? data?.media ?? data?.data ?? data?.items ?? data?.results ?? data?.mediaProfiles ?? data?.list ?? []);
+
+    if (!Array.isArray(slots)) {
+      console.warn('[fetchProfileMedia] Liste de slots non-tableau après normalisation:', slots);
+      dispatch({ type: FETCH_PROFILEMEDIA_SUCCESS, payload: [] });
+      return;
+    }
+    console.log('[fetchProfileMedia] Slots normalisés:', slots.length, slots);
+
+    dispatch({ type: FETCH_PROFILEMEDIA_SUCCESS, payload: slots });
   } catch (error) {
     dispatch({ type: FETCH_PROFILEMEDIA_FAIL, payload: error.message });
   }

@@ -1,7 +1,6 @@
 // File: frontend/src/components/admin/presse/FormArticlePhoto.jsx
 
 import React, { useState, useRef } from 'react';
-import { triggerFormatReset } from '../../../utils/formatController';
 
 const USER_API = process.env.REACT_APP_USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;

@@ -1,9 +1,4 @@
-// ***********************************************************
-// Cypress E2E support file
-// ***********************************************************
+// Cypress E2E support
+// import commands here if needed, e.g. import './commands';
 
-// Import commands.js using ES2015 syntax:
-import './commands'
-
-// Alternatively you can use CommonJS syntax:
-// require('./commands')
+Cypress.on('uncaught:exception', () => false);

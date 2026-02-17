@@ -19,7 +19,12 @@ export const fetchMessages = (categ = null) => {
         }
       });
       const data = await response.json();
-      dispatch({ type: FETCH_MESSAGES, payload: data });
+      if (!response.ok) {
+        console.error('Erreur API messages:', data);
+        dispatch({ type: FETCH_MESSAGES, payload: [] });
+        return;
+      }
+      dispatch({ type: FETCH_MESSAGES, payload: Array.isArray(data) ? data : [] });
     } catch (error) {
       console.error('Erreur lors de la récupération des messages', error);
     }

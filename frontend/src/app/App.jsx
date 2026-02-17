@@ -17,7 +17,6 @@ import panneau1536 from '../assets/original/banniere-1440x200.png';
 import Footer from '../components/footer/Footer';
 import './App.css';
 import SessionManager, { SessionProvider } from '../components/session/sessionManager.jsx';
-import SessionTimer from '../components/sessionTimer/SessionTimer.jsx';
 import { jwtDecode } from 'jwt-decode';
 
 // ✅ Fonction de déconnexion
@@ -41,7 +40,7 @@ function App() {
       return hash || 'auth';
     }
   });
-  const [panneau, setPanneau] = useState(panneau1536); // valeur par défaut
+  const [, setPanneau] = useState(panneau1536); // valeur par défaut (panneau responsive non affiché)
   const [openSubmenu, setOpenSubmenu] = useState(null);
 
   const dispatch = useDispatch();
@@ -77,6 +76,7 @@ function App() {
   };
 
   // ✅ Initialisation + resize
+  // À chaque chargement / réactualisation de la page : invalider la session (timer à zéro, logout).
   useEffect(() => {
     updatePanneau();
     window.addEventListener('resize', updatePanneau);
@@ -90,14 +90,18 @@ function App() {
       }
     }
 
-    if (token) {
-      dispatch({ type: "LOGIN_SUCCESS", payload: token });
-    }
+    // Pas de restauration de session : à chaque réinitialisation d’URL, on remet le timer à zéro et on déconnecte.
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('sessionJustLoggedIn');
+    dispatch({ type: 'LOGOUT' });
+    window.location.hash = 'auth';
+    setActivePage('auth');
 
     return () => {
       window.removeEventListener('resize', updatePanneau);
     };
-  }, [dispatch, token]);
+  }, [dispatch]);
 
   // ✅ Écouter les changements de hash (utile pour Cypress et back/forward du navigateur)
   useEffect(() => {
@@ -130,27 +134,38 @@ function App() {
     setOpenSubmenu((prev) => (prev === key ? null : key));
   };
 
-  // ✅ Memoïser menuItems pour éviter de recréer le tableau à chaque render
+  // Menu dynamique (structure alignée ppacilyoncentre) : Presse Générale / Presse Locale avec sous-menus admin
   const menuItems = useMemo(() => {
     const presseGenerale = isAdmin
       ? {
           key: 'presse-generale',
           label: 'Presse Générale',
-          defaultKey: 'newpresse',
+          defaultKey: 'presse-generale',
           children: [
+            { key: 'presse-generale', label: 'Gérer' },
             { key: 'newpresse', label: 'Consulter' },
-            { key: 'admin-presse-générale', label: 'Créer' },
-            { key: 'home', label: 'Gérer' },
+            { key: 'admin-presse-generale', label: 'Créer' },
           ],
         }
       : { key: 'newpresse', label: 'Presse Générale' };
 
+    const presseLocale = isAdmin
+      ? {
+          key: 'presse-locale',
+          label: 'Presse Locale',
+          defaultKey: 'presse-locale',
+          children: [
+            { key: 'presse-locale', label: 'Gérer' },
+            { key: 'newpresse-locale', label: 'Consulter' },
+            { key: 'admin-presse-locale', label: 'Créer' },
+          ],
+        }
+      : { key: 'newpresse-locale', label: 'Presse Locale' };
+
     return [
       { key: 'home', label: 'Home' },
       presseGenerale,
-      { key: 'presse-locale', label: 'Presse Locale' },
-      ...(isAdmin ? [{ key: 'presse-locale-admin', label: 'Admin-presse-locale' }] : []),
-      { key: 'zoompage', label: 'Zoompage' },
+      presseLocale,
       { key: 'contact', label: 'Contact' },
       { key: 'profilepage', label: 'ProfilePage' },
     ];
@@ -177,7 +192,7 @@ function App() {
 
       if (!hasChildren) {
         return (
-          <li key={item.key} className={isActive ? 'active' : ''}>
+          <li key={item.key} className={`menu__card ${isActive ? 'active' : ''}`}>
             <button type="button" className="menu-link" onClick={() => navigateTo(item.key)}>
               {item.label}
             </button>
@@ -188,7 +203,7 @@ function App() {
       return (
         <li
           key={item.key}
-          className={`has-submenu ${isActive ? 'active' : ''} ${openSubmenu === item.key ? 'open' : ''}`}
+          className={`menu__card has-submenu ${isActive ? 'active' : ''} ${openSubmenu === item.key ? 'open' : ''}`}
         >
           <div className="menu-item">
             <button
@@ -228,9 +243,8 @@ function App() {
     });
 
   return (
-    <SessionProvider>
+    <SessionProvider isAuthenticated={isAuthenticated} accessToken={token}>
       <div className={`App ${isAuthenticated ? 'authenticated' : 'not-authenticated'}`}>
-        {isAuthenticated && <SessionManager />}
       <header className="App__header">
         <div className="App__header__logo">
           <img src={logo} alt="logo" className="App__header__logo__img" />
@@ -246,8 +260,7 @@ function App() {
         </div>
 
         <div className="App__header__actions">
-          {isAuthenticated && <SessionTimer onLogout={() => handleLogout(dispatch)} />}
-          
+          {isAuthenticated && <SessionManager />}
           <div className="App__header__actions__hamburger">
             {isAuthenticated && (
               <HamburgerIcon isOpen={isOpen} toggleMenu={toggleMenu} />
@@ -257,8 +270,8 @@ function App() {
       </header>
 
       {isAuthenticated && (
-        <nav className={`menu ${isOpen ? 'open' : ''}`}>
-          <ul>
+        <nav className={`menu ${isOpen ? 'open' : ''}`} aria-label="Menu principal">
+          <ul className="menu__list">
             {renderMenuItems()}
           </ul>
         </nav>
@@ -266,7 +279,11 @@ function App() {
 
       {isAuthenticated && (
         <ul className="horizontal-menu">
-          {renderMenuItems()}
+          {menuItems.map((item) => (
+            <li key={item.key} className={isMenuItemActive(item) ? 'active' : ''}>
+              <a href={`#${item.key}`} onClick={(e) => { e.preventDefault(); navigateTo(item.defaultKey || item.key); }}>{item.label}</a>
+            </li>
+          ))}
         </ul>
       )}
 

@@ -1,6 +1,8 @@
 // src/reducers/authReducer.js
+// Ne jamais restaurer la session au chargement : à chaque réinitialisation d’URL / rechargement,
+// l’app considère qu’il n’y a pas de session active (timer à zéro, logout).
 const initialState = {
-  token: localStorage.getItem('accessToken') || null,
+  token: null,
   isAuthenticated: false,
   user: null,
   loading: false,

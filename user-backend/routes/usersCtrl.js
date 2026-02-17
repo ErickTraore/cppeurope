@@ -8,6 +8,7 @@ const jwtUtils = require('../utils/jwt.utils');
 const models = require('../models');
 const asyncLib = require('async');
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
+const MEDIA_API_CONTABO = process.env.MEDIA_API_CONTABO || process.env.REACT_APP_MEDIA_API;
 const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 const PASSWORD_REGEX = /^(?=.*\d).{4,20}$/;
 const {
@@ -97,10 +98,9 @@ module.exports = {
                 });
             },
             function (newUser, profile, done) {
-                console.log("📤 [BACKEND] Initialisation des médias par défaut pour profil :", profile.id);
+                console.log("📤 [BACKEND] Initialisation des médias par défaut pour profil :", profile.id, "→ Contabo", MEDIA_API_CONTABO);
                 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-                const mediaRequests = [];
                 const defaultPaths = [
                     '/mediaprofile/default/slot-0.png',
                     '/mediaprofile/default/slot-1.png',
@@ -108,24 +108,27 @@ module.exports = {
                     '/mediaprofile/default/slot-3.png'
                 ];
 
-                for (let slot = 0; slot <= 3; slot++) {
-                    mediaRequests.push(
-                        fetch(`${MEDIA_API}/mediaProfile/`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                profileId: profile.id,
-                                filename: '',
-                                path: defaultPaths[slot],
-                                type: '',
-                                slot
-                            })
+                const baseUrl = MEDIA_API_CONTABO || MEDIA_API;
+                const createOne = (slot) =>
+                    fetch(`${baseUrl}/mediaProfile/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            profileId: profile.id,
+                            filename: '',
+                            path: defaultPaths[slot],
+                            type: '',
+                            slot
                         })
-                    );
-                }
+                    }).then((r) => r.json().then((body) => ({ status: r.status, ok: r.ok, body })));
 
-                Promise.all(mediaRequests)
-                    .then(() => {
+                Promise.all([createOne(0), createOne(1), createOne(2), createOne(3)])
+                    .then((results) => {
+                        const failed = results.filter((r) => !r.ok);
+                        if (failed.length) {
+                            console.error("❌ [BACKEND] Création médias Contabo échec :", failed);
+                            return res.status(500).json({ error: "02-Profil créé mais échec création des médias (Contabo)" });
+                        }
                         console.log("✅ [BACKEND] Médias par défaut créés pour profil :", profile.id);
                         done(newUser);
                     })

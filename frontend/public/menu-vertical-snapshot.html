@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Menu vertical admin – snapshot</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Merriweather', sans-serif; background: #f1f1f1; padding: 2rem; }
+    .menu {
+      display: block;
+      position: relative;
+      width: 16rem;
+      z-index: 1000;
+      background: #f8f9fa;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 0.75rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .menu__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .menu__card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    .menu__card.active { box-shadow: 0 0 0 2px rgb(125, 154, 236); background: #f0f3ff; }
+    .menu__card.has-submenu .menu-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      padding: 0.75rem 1rem; min-height: 2.75rem;
+    }
+    .menu__card:not(.has-submenu) .menu-link { display: block; width: 100%; padding: 0.75rem 1rem; text-align: left; }
+    .menu-link {
+      background: transparent; border: none; color: #1a1a1a; font-size: 0.9375rem; font-weight: 500;
+      cursor: pointer; padding: 0; flex: 1; font-family: inherit;
+    }
+    .submenu-toggle {
+      flex-shrink: 0; width: 2rem; height: 2rem; background: rgba(0, 0, 0, 0.05);
+      border: none; border-radius: 6px; color: #444; cursor: pointer; font-size: 0.7rem;
+    }
+    .submenu {
+      list-style: none; margin: 0; padding: 0.25rem 0 0.5rem 0.5rem; padding-left: 1rem;
+      border-left: 3px solid rgba(125, 154, 236, 0.35); margin-left: 1rem; margin-bottom: 0.5rem;
+    }
+    .submenu li { margin-bottom: 0.15rem; }
+    .submenu-link {
+      display: block; width: 100%; background: transparent; border: none; color: #444;
+      font-size: 0.875rem; cursor: pointer; padding: 0.4rem 0.75rem; text-align: left;
+      border-radius: 6px; font-family: inherit;
+    }
+    .submenu li.active .submenu-link { background: rgba(125, 154, 236, 0.2); color: #1e3a8a; font-weight: 500; }
+    h1 { font-size: 1rem; color: #666; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Menu vertical admin (cadres arrondis, bandeau blanc)</h1>
+  <nav class="menu open" aria-label="Menu principal">
+    <ul class="menu__list">
+      <li class="menu__card"><button type="button" class="menu-link">Home</button></li>
+      <li class="menu__card has-submenu active open">
+        <div class="menu-item">
+          <button type="button" class="menu-link">Presse Générale</button>
+          <button type="button" class="submenu-toggle">▲</button>
+        </div>
+        <ul class="submenu">
+          <li><button type="button" class="submenu-link">Gérer</button></li>
+          <li class="active"><button type="button" class="submenu-link">Consulter</button></li>
+          <li><button type="button" class="submenu-link">Créer</button></li>
+        </ul>
+      </li>
+      <li class="menu__card has-submenu">
+        <div class="menu-item">
+          <button type="button" class="menu-link">Presse Locale</button>
+          <button type="button" class="submenu-toggle">▼</button>
+        </div>
+        <ul class="submenu" style="display:none;">
+          <li><button type="button" class="submenu-link">Gérer</button></li>
+          <li><button type="button" class="submenu-link">Consulter</button></li>
+          <li><button type="button" class="submenu-link">Créer</button></li>
+        </ul>
+      </li>
+      <li class="menu__card"><button type="button" class="menu-link">Contact</button></li>
+      <li class="menu__card"><button type="button" class="menu-link">ProfilePage</button></li>
+    </ul>
+  </nav>
+</body>
+</html>

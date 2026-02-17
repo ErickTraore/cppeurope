@@ -1,0 +1,19 @@
+{
+  "images": [
+    {
+      "id": "car-1",
+      "path": "images/car-1.png",
+      "description": "Voiture rouge, illustration 2D"
+    },
+    {
+      "id": "car-2",
+      "path": "images/car-2.png",
+      "description": "Peugeot 208 bleue, vue trois-quarts"
+    },
+    {
+      "id": "car-3",
+      "path": "images/car-3.png",
+      "description": "Peugeot 208 jaune et noir, en mouvement"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "table": "PresseGle",
+  "count": 1,
+  "rows": [
+    {
+      "id": 485,
+      "title": "E2E Titre Presse 1771249926914",
+      "content": "E2E Contenu article presse générale."
+    }
+  ]
+}

@@ -2,9 +2,7 @@
   "name": "lespremices-0.6.1-user-backend",
   "version": "0.6.1",
   "main": "server.js",
-  "scripts": {
-    "test": "NODE_ENV=test jest --detectOpenHandles"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -34,9 +32,7 @@
     "url": "https://github.com/ErickTraore/user-backend/issues"
   },
   "homepage": "https://github.com/ErickTraore/user-backend#readme",
-  "devDependencies": {
-    "jest": "^30.2.0",
-    "sequelize-cli": "^6.6.3",
-    "supertest": "^7.1.4"
-  }
+"devDependencies": {
+    "sequelize-cli": "^6.6.3"
+}
 }

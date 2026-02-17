@@ -6,14 +6,14 @@ import Register from '../register/Register';
 import '../pageContent/PageContent.css';
 import Home from '../home/Home';
 import ContactForm from '../contactForm/ContactForm';
-import Attestation from '../attestation/Attestation';
 import Login from '../login/Login';
-import Zoompage from '../zoompage/Zoompage';
-import Presse from '../admin/presseGenerale/PresseGenerale';          // module admin (prod)
+import PresseGeneraleManager from '../presseGenerale/PresseGeneraleManager';
+import PresseGeneraleConsulter from '../presseGenerale/PresseGeneraleConsulter';
+import PresseGeneraleCreer from '../presseGenerale/PresseGeneraleCreer';
+import PresseLocaleManager from '../presseLocale/PresseLocaleManager';
+import PresseLocaleConsulter from '../presseLocale/PresseLocaleConsulter';
+import PresseLocaleCreer from '../presseLocale/PresseLocaleCreer';
 import ProfilePage from '../profilepage/ProfilePage';
-import NewPresse from '../presse/Presse';             // nouveau module presse
-import PresseLocale from '../presseLocale/PresseLocale'; // presse locale
-import AdminPresseLocale from '../presseLocale/AdminPresseLocale'; // admin presse locale
 
 const PageContent = React.memo(({ activePage }) => {
   return (
@@ -22,14 +22,15 @@ const PageContent = React.memo(({ activePage }) => {
       {activePage === 'auth' && <Auth />}
       {activePage === 'register' && <Register />}
       {activePage === 'contact' && <ContactForm />}
-      {activePage === 'login' && <Login />} 
-      {activePage === 'attestation' && <Attestation />} 
-      {activePage === 'zoompage' && <Zoompage />} 
+      {activePage === 'login' && <Login />}
 
-      {activePage === 'admin-presse-générale' && <Presse />}  {/* admin presse générale */}
-      {activePage === 'newpresse' && <NewPresse />}    {/* nouveau module */}
-      {activePage === 'presse-locale' && <PresseLocale />}  {/* presse locale */}
-      {activePage === 'presse-locale-admin' && <AdminPresseLocale />}  {/* admin presse locale (CRUD) */}
+      {activePage === 'presse-generale' && <PresseGeneraleManager />}  {/* Gérer presse générale */}
+      {activePage === 'newpresse' && <PresseGeneraleConsulter />}    {/* Consulter presse générale */}
+      {(activePage === 'admin-presse-generale' || activePage === 'admin-presse-générale') && <PresseGeneraleCreer />}   {/* Créer presse générale */}
+
+      {activePage === 'presse-locale' && <PresseLocaleManager />}  {/* Gérer presse locale */}
+      {activePage === 'newpresse-locale' && <PresseLocaleConsulter />}    {/* Consulter presse locale */}
+      {activePage === 'admin-presse-locale' && <PresseLocaleCreer />}   {/* Créer presse locale */}
 
       {activePage === 'profilepage' && <ProfilePage />}
     </div>

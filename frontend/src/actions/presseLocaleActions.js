@@ -4,7 +4,8 @@ export const FETCH_PRESSE_LOCALE = 'FETCH_PRESSE_LOCALE';
 export const FETCH_PRESSE_LOCALE_BY_CITY = 'FETCH_PRESSE_LOCALE_BY_CITY';
 export const FILTER_PRESSE_LOCALE_BY_CITY = 'FILTER_PRESSE_LOCALE_BY_CITY';
 
-const PRESSE_LOCALE_API = process.env.REACT_APP_PRESSE_LOCALE_API;
+const PRESSE_LOCALE_API = process.env.REACT_APP_PRESSE_LOCALE_API || process.env.REACT_APP_USER_API;
+const PRESSE_LOCALE_SITE_KEY = process.env.REACT_APP_PRESSE_LOCALE_SITE_KEY || '';
 
 /**
  * Récupère tous les messages presse locale depuis le user-backend
@@ -12,7 +13,11 @@ const PRESSE_LOCALE_API = process.env.REACT_APP_PRESSE_LOCALE_API;
 export const fetchPresseLocale = () => {
   return async dispatch => {
     try {
-      const response = await fetch(`${PRESSE_LOCALE_API}/messages/?categ=presse-locale`, {
+      const siteKeyParam = PRESSE_LOCALE_SITE_KEY
+        ? `&siteKey=${encodeURIComponent(PRESSE_LOCALE_SITE_KEY)}`
+        : '';
+
+      const response = await fetch(`${PRESSE_LOCALE_API}/messages/?categ=presse-locale${siteKeyParam}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

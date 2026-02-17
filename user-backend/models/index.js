@@ -22,21 +22,21 @@ console.log(`🔌 Initialisation Sequelize pour la base : ${config.database}`);
 
 // Import des modèles
 const User = require('./user')(sequelize, DataTypes);
-const PresseGenerale = require('./presseGenerale')(sequelize, DataTypes);
+const PresseGle = require('./presseGle')(sequelize, DataTypes);
 const Profile = require('./profile')(sequelize, DataTypes);
 
-// Alias pour compatibilité (Message = PresseGenerale)
-const Message = PresseGenerale;
+// Alias pour compatibilité (Message = PresseGle)
+const Message = PresseGle;
 
-// Associations (comme tu l'avais)
-if (User.associate) User.associate({ PresseGenerale, Profile });
-if (PresseGenerale.associate) PresseGenerale.associate({ User });
+// Associations (comme tu l’avais)
+if (User.associate) User.associate({ Message, PresseGle, Profile });
+if (PresseGle.associate) PresseGle.associate({ User });
 if (Profile.associate) Profile.associate({ User });
 
 module.exports = {
   sequelize,
   User,
   Message,      // ✅ Alias pour compatibilité
-  PresseGenerale,
+  PresseGle,
   Profile,
 };

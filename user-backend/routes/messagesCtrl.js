@@ -4,6 +4,7 @@ const fetch = (...args) => import('node-fetch').then(({
     default: fetch
 }) => fetch(...args));
 const MEDIA_BACKEND_URL = process.env.MEDIA_BACKEND_URL || 'http://localhost:7004/api/media/getMedia';
+const MEDIA_LOCALE_BACKEND_URL = process.env.MEDIA_LOCALE_BACKEND_URL || MEDIA_BACKEND_URL;
 
 const models = require('../models');
 const asyncLib = require('async');
@@ -30,7 +31,8 @@ module.exports = {
             tittle,
             image,
             video,
-            categ
+            categ,
+            siteKey
         } = req.body;
 
         // Accepter "title" ou "tittle" (typo dans le frontend)
@@ -79,14 +81,15 @@ module.exports = {
             },
             function (userFound, done) {
                 if (userFound) {
-                    models.Message.create({
+                        models.Message.create({
                             title: messageTitle,
                             content: content,
                             userId: userFound.id,
                             categ: categ || 'presse',
                             likes: 0,
                             image: image || null,
-                            video: video || null
+                            video: video || null,
+                            siteKey: siteKey || null
                         })
                         .then(function (newMessage) {
                             done(null, newMessage);
@@ -128,6 +131,7 @@ module.exports = {
             const offset = parseInt(req.query.offset);
             const order = req.query.order || 'createdAt:DESC';
             const categ = req.query.categ; // Filtre par catégorie
+            const siteKey = req.query.siteKey;
 
             console.log('Fields:', fields);
             console.log('Limit:', isNaN(limit) ? 'default (20)' : limit);
@@ -138,6 +142,9 @@ module.exports = {
             const whereClause = {};
             if (categ) {
                 whereClause.categ = categ;
+            }
+            if (siteKey) {
+                whereClause.siteKey = siteKey;
             }
 
             const messages = await models.Message.findAll({
@@ -164,29 +171,29 @@ module.exports = {
             // ✅ Récupérer les médias pour chaque message via `getMedia`
             const enrichedMessages = await Promise.all(
                 messages.map(async (message) => {
+                    const messagePlain = message.get({ plain: true });
+                    const isLocale = (messagePlain.categ || '').toLowerCase() === 'presse-locale';
+                    const mediaBase = isLocale ? MEDIA_LOCALE_BACKEND_URL : MEDIA_BACKEND_URL;
+
                     try {
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
-                        
-                        const response = await fetch(`${MEDIA_BACKEND_URL}/${message.id}`, {
+
+                        const response = await fetch(`${mediaBase}/${message.id}`, {
                             signal: controller.signal
                         });
                         clearTimeout(timeoutId);
-                        
+
                         const mediaData = await response.json();
 
                         return {
-                            ...message.get({
-                                plain: true
-                            }), // ✅ Convertir Sequelize object en JSON
+                            ...messagePlain, // ✅ Convertir Sequelize object en JSON
                             media: mediaData || [] // ✅ Ajouter les médias au message
                         };
                     } catch (error) {
                         console.error(`❌ Erreur lors de la récupération des médias pour le message ${message.id}:`, error.message);
                         return {
-                            ...message.get({
-                                plain: true
-                            }),
+                            ...messagePlain,
                             media: []
                         }; // ✅ Si erreur, renvoyer un message sans média
                     }

@@ -39,6 +39,7 @@ const Login = () => {
       if (response.ok) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
+        sessionStorage.setItem('sessionJustLoggedIn', '1');
 
         dispatch(loginUser(data.accessToken));
 

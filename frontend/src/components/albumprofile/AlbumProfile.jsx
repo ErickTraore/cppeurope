@@ -18,7 +18,12 @@ const AlbumProfile = () => {
       {visibleSlots.map(media => (
         <div key={media.slot}>
           <img
-            src={`${process.env.REACT_APP_MEDIA_API}${media.path}`}
+            src={
+              typeof media.path === 'string' &&
+              (media.path.startsWith('/imagesprofile/') || media.path.startsWith('/mediaprofile/'))
+                ? media.path
+                : `${process.env.REACT_APP_MEDIA_API}${media.path || ''}`
+            }
             alt={`slot-${media.slot}`}
             style={{
               width: 140,
@@ -28,7 +33,7 @@ const AlbumProfile = () => {
               border: '1px solid #ccc'
             }}
             onError={(e) => {
-              e.target.src = `${process.env.REACT_APP_MEDIA_API}/mediaprofile/default/slot-${media.slot}.png`;
+              e.target.src = `/mediaprofile/default/slot-${media.slot}.png`;
             }}
           />
         </div>

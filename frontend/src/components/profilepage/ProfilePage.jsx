@@ -39,8 +39,6 @@ const ProfilePage = () => {
   });
 
   const [uploading, setUploading] = useState({});
-  const [mediaEdits, setMediaEdits] = useState({});
-
   // ---- 1) Chargement initial du profil ----
   useEffect(() => {
     console.log('[ProfilePage] useEffect(mount) → dispatch(fetchProfileInfo())');
@@ -70,7 +68,7 @@ const ProfilePage = () => {
     } else {
       console.log('[ProfilePage] Aucun data.id pour le moment (profil non chargé ou erreur)');
     }
-  }, [data?.id, dispatch]);
+  }, [data, dispatch]);
 
   // ---- 3) Écoute d’un éventuel event "tokenUpdated" ----
   useEffect(() => {
@@ -183,6 +181,24 @@ const ProfilePage = () => {
   const safeSlots = Array.isArray(slots) ? slots : [];
   console.log('[ProfilePage] safeSlots (tableau) =', safeSlots);
 
+  // Résolution d'URL : /imagesprofile et /mediaprofile sont servis par nginx en "same-origin"
+  // et ne doivent PAS être préfixés par REACT_APP_MEDIA_API (/api/media), sinon 404.
+  const resolveProfileMediaSrc = (path, slot) => {
+    const slotIndex = slot ?? 0;
+    const fallback = `/mediaprofile/default/slot-${slotIndex}.png`;
+
+    if (!path) return fallback;
+    if (typeof path !== 'string') return fallback;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+    // Ces chemins sont exposés directement par nginx (cf. /imagesprofile/ et /mediaprofile/)
+    if (path.startsWith('/imagesprofile/') || path.startsWith('/mediaprofile/')) return path;
+
+    // Autres chemins : tenter via l'API media si configurée
+    if (path.startsWith('/') && MEDIA_API) return `${MEDIA_API}${path}`;
+    return fallback;
+  };
+
   // ---- 9) JSX ----
   return (
     <div className="profile-page">
@@ -288,9 +304,12 @@ const ProfilePage = () => {
             {safeSlots.map((media) => (
               <div key={media.id} className="images__container__grid__card">
                 <img
-                  src={media.path}
+                  src={resolveProfileMediaSrc(media.path, media.slot)}
                   alt="ProfileImage"
                   className="profile-image"
+                  onError={(e) => {
+                    e.target.src = resolveProfileMediaSrc(null, media.slot);
+                  }}
                 />
 
                 <div className="images__container__grid__card__upload">

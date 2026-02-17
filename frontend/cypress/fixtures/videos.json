@@ -1,0 +1,9 @@
+{
+  "videos": [
+    {
+      "id": "video-1",
+      "path": "videos/video-1.mp4",
+      "description": "Vidéo réelle pour tests E2E option 3 (Presse Générale – Créer)"
+    }
+  ]
+}

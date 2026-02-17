@@ -18,238 +18,266 @@ body {
     height: 100%;
     display: flex;
     flex-direction: row;
-    align-items: stretch;
-    justify-content: space-between; // ✅ Ajouté
-    padding: 4px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 1rem;
     background-color: rgb(125, 154, 236);
     border: solid 1px darkblue;
     border-radius: 10px;
-    ;
 
     &__logo {
-      width: 20%;
-      height: auto;
+      flex: 0 1 15%;
+      width: 15%;
+      min-width: 2em;
+      aspect-ratio: 1;
       display: flex;
       align-items: center;
 
       &__img {
         width: 100%;
         height: 100%;
-        display: flex;
+        object-fit: contain;
         border-radius: 10px;
       }
     }
 
     &__panneau {
-         padding-top: 12px;
-      height: auto;
+      flex: 0 1 65%;
+      min-width: 0;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: stretch;
       flex-direction: column;
+      gap: 0.1em;
 
-      &__text-1 {
+      &__text-1,
+      &__text-2 {
         width: 100%;
-        height: 50%;
-        margin: 0px 0px;
-        font-size: 0.9rem;
+        min-width: 0;
+        margin: 0;
         color: white;
         text-align: center;
         font-weight: bold;
+        line-height: 1.2;
+        box-sizing: border-box;
+      }
 
+      &__text-1 {
+        font-size: clamp(0.5rem, 5vw, 0.9rem);
       }
 
       &__text-2 {
-        width: 100%;
-        height: 50%;
-        margin: 0px 0px;
-        font-size: 0.6rem;
-        color: white;
-        text-align: center;
-        font-weight: bold;
-
+        font-size: clamp(0.4rem, 3.5vw, 0.6rem);
       }
     }
 
     &__actions {
-      width: 10%;
-      height: auto; // ✅ s'étend sur toute la hauteur du header
+      flex: 0 1 20%;
+      min-width: 0;
+      height: auto;
       display: flex;
       flex-direction: column;
-      justify-content: space-between; // ✅ espace maximal entre les enfants
-      align-items: center;
-      &__buttons {
-        width: 100%;
-        height: 40%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        &__logout {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          color: white;
-          cursor: pointer;
-          background-color: rgb(125, 154, 236);
-          border: none;
-          &__fa {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 4vw;
-            font-weight: bold;
-            color: white;
-        }
-        }
+      justify-content: center;
+      gap: clamp(0.25rem, 0.6vw, 0.7rem);
+      align-items: stretch;
+      overflow: hidden;
+
+      @media (min-width: 768px) {
+        gap: 20px;
       }
 
+      // Bandeau blanc commun pour cadenas et hamburger
+      %bandeau-blanc {
+        flex: 0 0 auto;
+        min-width: 0;
+        max-width: 100%;
+        background: white;
+        border-radius: 8px;
+        padding: 0.4em 0.5em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        height: 2.5em;
+      }
+
+      // App__header__actions contient : cadenas et hamburger (2 enfants directs)
       &__cadenas {
+        @extend %bandeau-blanc;
         width: 100%;
-        height: 30%;
-        display: flex;
-        flex-direction: column;
+        cursor: pointer;
+        flex-direction: row;
+        gap: 0.3em;
         justify-content: center;
         align-items: center;
-        gap: 4px;
-        padding-top: 9px;
-        
+        padding: 0.4em max(3px, 0.5em);
+
+        &__icon {
+          flex: 0 0 auto;
+        }
+
         &__timer {
-          font-size: clamp(14px, 3vw, 24px);
-          font-weight: bold;
-          color: white;
-          white-space: nowrap;
-          
-          &--logout {
-            color: #ef4444; // rouge pour logout
-          }
+          flex: 0 0 auto;
         }
-        
-        &__icon {
-          font-size: clamp(18px, 5vw, 32px);
-          color: #4ade80; // vert pour connecté
-          display: flex;
-          align-items: center;
-          
-          &--logout {
-            color: #ef4444; // rouge pour logout
+
+        // 320px : espace 3px min + réduire si besoin
+        @media (max-width: 320px) {
+          padding: 0.4em 3px;
+
+          &__icon {
+            font-size: 0.9em;
+          }
+
+          &__timer {
+            font-size: 0.85em;
           }
         }
       }
 
-      &__hamburger {
+      &__hamburger__icon {
+        @extend %bandeau-blanc;
         width: 100%;
-        height:30%;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-
-        &__icon {
-          font-size: clamp(14px, 4vw, 40px);
-          width: 100%;
-          height: auto;
-          display: flex;
-          cursor: pointer;
-          border: none;
-          display: none;
-          border-radius: 4px;
-          background-color: white;
-          color: darkblue;
-        }
-
-        &__icon {
-          display: block;
-        }
+        border: none;
+        font-size: 1.2em;
+        cursor: pointer;
       }
-
     }
 
   }
 }
 
+// Menu vertical admin : cadres arrondis, bandeau blanc, UX moderne
 .menu {
   display: none;
   position: absolute;
-  top: 40px;
-  left: 0;
-  width: 100%;
-  /* Assurez-vous que le menu prend toute la largeur */
-  background: #333;
+  top: 3.5rem;
+  left: 1rem;
+  width: 16rem;
+  max-width: calc(100vw - 2rem);
   z-index: 1000;
-  color: white;
-  list-style: none;
-  padding: 10px;
-  border-radius: 4px;
-  justify-content: center;
-  /* Centre le contenu horizontalement */
-  align-items: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 
   &.open {
-    display: flex;
+    display: block;
   }
 
-  ul {
+  .menu__list {
     margin: 0;
     padding: 0;
+    list-style: none;
     display: flex;
     flex-direction: column;
-    align-items: flex-start; // ✅ correction ici
+    gap: 0.5rem;
+  }
 
-    li {
-      padding: 10px 20px;
+  .menu__card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, background-color 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    &.active {
+      box-shadow: 0 0 0 2px rgb(125, 154, 236);
+      background: #f0f3ff;
+    }
+
+    &.has-submenu .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      min-height: 2.75rem;
+    }
+
+    &:not(.has-submenu) .menu-link {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    .menu-link {
+      background: transparent;
+      border: none;
+      color: #1a1a1a;
+      font-size: 0.9375rem;
+      font-weight: 500;
       cursor: pointer;
+      padding: 0;
+      flex: 1;
+    }
 
-      &.has-submenu {
-        width: 100%;
-      }
-
-      .menu-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .menu-link {
-        background: transparent;
-        border: none;
-        color: white;
-        font-size: 14px;
-        cursor: pointer;
-        padding: 0;
-      }
-
-      .submenu-toggle {
-        background: transparent;
-        border: none;
-        color: white;
-        cursor: pointer;
-        font-size: 12px;
-      }
-
-      .submenu {
-        list-style: none;
-        margin: 8px 0 0 12px;
-        padding: 0;
-        display: none;
-      }
-
-      &.open .submenu {
-        display: block;
-      }
-
-      .submenu-link {
-        background: transparent;
-        border: none;
-        color: white;
-        font-size: 13px;
-        cursor: pointer;
-        padding: 6px 0;
-      }
+    .submenu-toggle {
+      flex-shrink: 0;
+      width: 2rem;
+      height: 2rem;
+      background: rgba(0, 0, 0, 0.05);
+      border: none;
+      border-radius: 6px;
+      color: #444;
+      cursor: pointer;
+      font-size: 0.7rem;
+      transition: background 0.2s ease;
 
       &:hover {
-        background: #555;
+        background: rgba(0, 0, 0, 0.1);
       }
+    }
+
+    .submenu {
+      list-style: none;
+      margin: 0;
+      padding: 0.25rem 0 0.5rem 0.5rem;
+      padding-left: 1rem;
+      border-left: 3px solid rgba(125, 154, 236, 0.35);
+      margin-left: 1rem;
+      margin-bottom: 0.5rem;
+      display: none;
+    }
+
+    &.open .submenu {
+      display: block;
+    }
+
+    .submenu li {
+      margin-bottom: 0.15rem;
+    }
+
+    .submenu-link {
+      display: block;
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #444;
+      font-size: 0.875rem;
+      cursor: pointer;
+      padding: 0.4rem 0.75rem;
+      text-align: left;
+      border-radius: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+
+      &:hover {
+        background: rgba(125, 154, 236, 0.12);
+        color: #2c3e8a;
+      }
+    }
+
+    .submenu li.active .submenu-link {
+      background: rgba(125, 154, 236, 0.2);
+      color: #1e3a8a;
+      font-weight: 500;
     }
   }
 }
@@ -327,15 +355,6 @@ body {
   /* Masquer le menu horizontal sur les petits écrans */
 }
 
-.menu {
-  width: 9rem;
-  position: absolute;
-  flex-direction: column;
-  /* Pour les petits écrans, afficher les éléments en colonne */
-  top: 150px;
-  left: 60px;
-  /* Ajustement pour éviter de chevaucher le logo et le bouton hamburger */
-}
 
 .menu-logo {
   display: flex;
@@ -355,15 +374,17 @@ body {
   padding: 10px;
 }
 
-/* 📱 Mobile S: 376px – 425px */
+/* 📱 Mobile S: 375px – 425px – panneau */
 
 @media screen and (min-width: 375px) and (max-width: 425px) {
-  .App__header__panneau__text-1 {
-    font-size: 1.2rem;
-  }
+  .App__header__panneau {
+    &__text-1 {
+      font-size: clamp(0.95rem, 3.2vw, 1.2rem);
+    }
 
-  .App__header__panneau__text-2 {
-    font-size: 0.7rem;
+    &__text-2 {
+      font-size: clamp(0.6rem, 1.8vw, 0.75rem);
+    }
   }
 }
 
@@ -389,14 +410,16 @@ body {
   }
 }
 
-/* 💻 Tablet: 769px – 1024px */
+/* 💻 Tablet: 768px – 1023px – panneau */
 @media screen and (min-width: 768px) and (max-width: 1023px) {
-.App__header__panneau__text-1 {
-    font-size: 2.5rem;
-  }
+  .App__header__panneau {
+    &__text-1 {
+      font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+    }
 
-  .App__header__panneau__text-2 {
-    font-size: 1.4rem;
+    &__text-2 {
+      font-size: clamp(1rem, 2.2vw, 1.4rem);
+    }
   }
 }
 

@@ -1,0 +1,54 @@
+.presse-wrapper {
+  padding: 2rem;
+  padding-bottom: 120px; // évite le chevauchement du footer
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.presse-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #222;
+}
+
+.presse-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.presse-select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 1.5rem;
+}
+
+.presse-description {
+  margin-top: 10px;
+  font-style: italic;
+  color: #555;
+}
+
+.presse-form-container {
+  margin-top: 20px;
+}
+
+.presse-reset-button {
+  margin-top: 20px;
+  padding: 0.6rem 1rem;
+  background-color: #0055aa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #003f7f;
+  }
+}
