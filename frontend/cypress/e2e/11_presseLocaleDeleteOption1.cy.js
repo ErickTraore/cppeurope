@@ -22,7 +22,10 @@ describe('Presse Locale - Delete (option 1)', () => {
       cy.get('button.btn-delete').contains('Supprimer').click();
     });
     cy.wait('@deleteMsg', { timeout: 10000 });
-    cy.get('.message-card').filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace).should('not.exist', { timeout: 12000 });
+    cy.get('body').should(($body) => {
+      const matching = $body.find('.message-card').filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace);
+      expect(matching.length, 'La carte "titre remplacé" ne doit plus exister').to.eq(0);
+    }, { timeout: 12000 });
     cy.window().invoke('localStorage.getItem', 'accessToken').then((token) => {
       cy.request({ method: 'GET', url: apiMessages(), headers: { Authorization: 'Bearer ' + token } }).then((res) => {
         expect(res.status).to.eq(200);
