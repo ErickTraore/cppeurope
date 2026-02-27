@@ -14,7 +14,8 @@ describe('Presse Locale - Delete (option 2)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
   });
   it('1 - cible la carte titre remplacé Option2 dans Gérer, 2 - la supprime, 3 - vérifie la suppression', () => {
-    cy.visit('/#presse-locale');
+    cy.window().then((win) => { win.location.hash = 'presse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.contains('.message-card', titreRemplace, { timeout: 10000 }).should('be.visible').and('exist');
     cy.window().then((win) => { cy.stub(win, 'confirm').returns(true); cy.stub(win, 'alert'); });
     cy.contains('.message-card', titreRemplace).within(() => {

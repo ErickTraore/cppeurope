@@ -23,7 +23,8 @@ describe('Presse Locale - Create (option 3: titre + contenu + vidéo)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
   });
   it('envoie article avec titre, contenu et vidéo et affiche succès', () => {
-    cy.visit('/#admin-presse-locale');
+    cy.window().then((win) => { win.location.hash = 'admin-presse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('#format').select('article-video');
     cy.get('input[name="title"]').clear().type(titre);
     cy.get('textarea[name="content"]').clear().type(contenu);
@@ -43,7 +44,8 @@ describe('Presse Locale - Create (option 3: titre + contenu + vidéo)', () => {
     });
   });
   it('en Consulter : page, titre, vidéo et contenu consultables', () => {
-    cy.visit('/#newpresse-locale');
+    cy.window().then((win) => { win.location.hash = 'newpresse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('.presse__container__title').should('contain', 'Presse Locale');
     cy.get('.presse__container__messagelist').should('exist');
     cy.contains('.presse__message__header__title', titre, { timeout: 10000 }).should('be.visible');
@@ -63,7 +65,8 @@ describe('Presse Locale - Create (option 3: titre + contenu + vidéo)', () => {
         body: { title: titreRemplace, content: contenuRemplace },
       }).then((updateRes) => {
         expect(updateRes.status).to.eq(200);
-        cy.visit('/#presse-locale');
+        cy.window().then((win) => { win.location.hash = 'presse-locale'; });
+        cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
         cy.contains('.message-card', titreRemplace, { timeout: 15000 }).within(() => {
           cy.get('.message-content').should('contain', contenuRemplace);
         });

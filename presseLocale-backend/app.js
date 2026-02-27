@@ -28,7 +28,16 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map(o => o.trim())
   .filter(o => o.length > 0);
 
-console.log('🌍 CORS allowedOrigins (presseLocale-backend) :', allowedOrigins);
+const fallbackOrigins = [
+  'https://cppeurope.net',
+  'https://www.cppeurope.net',
+];
+
+const effectiveAllowedOrigins = allowedOrigins.length > 0
+  ? allowedOrigins
+  : fallbackOrigins;
+
+console.log('🌍 CORS allowedOrigins (presseLocale-backend) :', effectiveAllowedOrigins);
 
 // 🔐 CORS
 app.use(cors({
@@ -40,10 +49,10 @@ app.use(cors({
     }
 
     console.log("🌍 Origin reçu :", origin);
-    console.log("📜 Liste des origins autorisés :", allowedOrigins);
+    console.log("📜 Liste des origins autorisés :", effectiveAllowedOrigins);
 
     // 2️⃣ Validation stricte
-    if (isDev || allowedOrigins.includes(origin)) {
+    if (isDev || effectiveAllowedOrigins.includes(origin)) {
       console.log("✅ CORS autorisé pour :", origin);
       return callback(null, true);
     }

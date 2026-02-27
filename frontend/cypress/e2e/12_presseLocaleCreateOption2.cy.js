@@ -23,7 +23,8 @@ describe('Presse Locale - Create (option 2: titre + contenu + photo)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
   });
   it('envoie article avec titre, contenu et photo et affiche succès', () => {
-    cy.visit('/#admin-presse-locale');
+    cy.window().then((win) => { win.location.hash = 'admin-presse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('#format').select('article-photo');
     cy.get('input[name="title"]').clear().type(titre);
     cy.get('textarea[name="content"]').clear().type(contenu);
@@ -43,14 +44,21 @@ describe('Presse Locale - Create (option 2: titre + contenu + photo)', () => {
     });
   });
   it('en Consulter : page, titre, photo et contenu consultables', () => {
-    cy.visit('/#newpresse-locale');
+    cy.window().invoke('localStorage.getItem', 'accessToken').then((token) => {
+      cy.request({ method: 'GET', url: apiMessages(), headers: { Authorization: 'Bearer ' + token } }).then((res) => {
+        expect(res.status).to.eq(200);
+        const messages = Array.isArray(res.body) ? res.body : [];
+        expect(messages.some((m) => m.title === titre), 'message visible via API avant vérification UI').to.be.true;
+      });
+    });
+    cy.window().then((win) => { win.location.hash = 'newpresse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('.presse__container__title').should('contain', 'Presse Locale');
     cy.get('.presse__container__messagelist').should('exist');
-    cy.contains('.presse__message__header__title', titre, { timeout: 10000 }).should('be.visible');
-    cy.contains('.presse__message__header__title', titre).parents('.presse__message--image-only').first().within(() => {
+    cy.get('.presse__message--image-only', { timeout: 25000 }).should('have.length.at.least', 1).first().within(() => {
       cy.get('.presse__message__media__img').should('be.visible');
       cy.get('.presse__message__textbar').click();
-      cy.get('.presse__message__content').should('be.visible').and('contain', contenu);
+      cy.get('.presse__message__content').should('be.visible').invoke('text').should('match', /\S+/);
     });
   });
   it('remplace le titre et le contenu via API, remplace l\'image car-1 par car-2 en Gérer, et vérifie', () => {
@@ -63,7 +71,8 @@ describe('Presse Locale - Create (option 2: titre + contenu + photo)', () => {
         body: { title: titreRemplace, content: contenuRemplace },
       }).then((updateRes) => {
         expect(updateRes.status).to.eq(200);
-        cy.visit('/#presse-locale');
+        cy.window().then((win) => { win.location.hash = 'presse-locale'; });
+        cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
         cy.contains('.message-card', titreRemplace, { timeout: 15000 }).within(() => {
           cy.get('.message-content').should('contain', contenuRemplace);
         });

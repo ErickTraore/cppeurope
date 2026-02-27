@@ -14,18 +14,27 @@ describe('Presse Locale - Delete (option 3)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
   });
   it('1 - cible la carte titre remplacé Option3 dans Gérer, 2 - la supprime, 3 - vérifie la suppression', () => {
-    cy.visit('/#presse-locale');
-    cy.contains('.message-card', titreRemplace, { timeout: 10000 }).should('be.visible').and('exist');
+    let initialCount = 0;
+    cy.window().then((win) => { win.location.hash = 'presse-locale'; });
+    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
+    cy.get('.message-card', { timeout: 15000 }).then(($cards) => {
+      initialCount = $cards.filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace).length;
+      expect(initialCount, 'Au moins une carte "titre remplacé Option3" doit exister avant suppression').to.be.gte(1);
+    });
     cy.window().then((win) => { cy.stub(win, 'confirm').returns(true); cy.stub(win, 'alert'); });
-    cy.contains('.message-card', titreRemplace).within(() => {
+    cy.get('.message-card', { timeout: 10000 }).filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace).first().within(() => {
       cy.get('button.btn-delete').contains('Supprimer').click();
     });
-    cy.contains('.message-card', titreRemplace).should('not.exist');
+    cy.get('body').should(($body) => {
+      const matching = $body.find('.message-card').filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace);
+      expect(matching.length, 'Le nombre de cartes "titre remplacé Option3" doit diminuer de 1').to.eq(Math.max(0, initialCount - 1));
+    }, { timeout: 12000 });
     cy.window().invoke('localStorage.getItem', 'accessToken').then((token) => {
       cy.request({ method: 'GET', url: apiMessages(), headers: { Authorization: 'Bearer ' + token } }).then((res) => {
         expect(res.status).to.eq(200);
         const messages = Array.isArray(res.body) ? res.body : [];
-        expect(messages.some((m) => m.title === titreRemplace)).to.be.false;
+        const remaining = messages.filter((m) => m.title === titreRemplace).length;
+        expect(remaining, 'Le nombre de messages API "titre remplacé Option3" doit diminuer de 1').to.eq(Math.max(0, initialCount - 1));
       });
     });
   });
