@@ -4,10 +4,9 @@ const fetch = (...args) => import('node-fetch').then(({
     default: fetch
 }) => fetch(...args));
 const MEDIA_BACKEND_URL = process.env.MEDIA_BACKEND_URL || 'http://localhost:7004/api/media/getMedia';
-const MEDIA_LOCALE_BACKEND_URL = process.env.MEDIA_LOCALE_BACKEND_URL || MEDIA_BACKEND_URL;
+const MEDIA_PRESSE_GLE_URL = process.env.MEDIA_PRESSE_GLE_URL || MEDIA_BACKEND_URL;
 
 const models = require('../models');
-const asyncLib = require('async');
 const jwtUtils = require('../utils/jwt.utils');
 
 const TITLE_LIMIT = 2;
@@ -59,68 +58,22 @@ module.exports = {
             });
         }
 
-        asyncLib.waterfall([
-            function (done) {
-                console.log('Looking for user with id:', userId);
-                models.User.findOne({
-                        attributes: ['id'],
-                        where: {
-                            id: userId
-                        }
-                    })
-                    .then(function (userFound) {
-                        console.log('User found:', userFound);
-                        done(null, userFound);
-                    })
-                    .catch(function (err) {
-                        console.log('Error finding user:', err);
-                        return res.status(500).json({
-                            'error': 'unable to verify user'
-                        });
-                    });
-            },
-            function (userFound, done) {
-                if (userFound) {
-                        models.Message.create({
-                            title: messageTitle,
-                            content: content,
-                            userId: userFound.id,
-                            categ: categ || 'presse',
-                            likes: 0,
-                            image: image || null,
-                            video: video || null,
-                            siteKey: siteKey || null
-                        })
-                        .then(function (newMessage) {
-                            done(null, newMessage);
-                        })
-                        .catch(function (err) {
-                            console.log('Error creating message:', err);
-                            done(err);
-                        });
-                } else {
-                    res.status(404).json({
-                        'error': 'user not found'
-                    });
-                }
-            },
-        ], function (err, newMessage) {
-            if (err) {
-                console.log('Error in waterfall:', err);
-                return res.status(500).json({
-                    'error': 'cannot post message'
-                });
-            }
-            if (newMessage) {
-                // Renvoie l'ID du nouveau message
-                return res.status(201).json({
-                    id: newMessage.id
-                });
-            } else {
-                return res.status(500).json({
-                    'error': 'cannot post message'
-                });
-            }
+        models.Message.create({
+            title: messageTitle,
+            content: content,
+            userId: userId || null,
+            categ: categ || 'presse',
+            likes: 0,
+            image: image || null,
+            video: video || null,
+            siteKey: siteKey || null
+        })
+        .then(function (newMessage) {
+            return res.status(201).json({ id: newMessage.id });
+        })
+        .catch(function (err) {
+            console.log('Error creating message:', err);
+            return res.status(500).json({ 'error': 'cannot post message' });
         });
     },
 
@@ -153,15 +106,6 @@ module.exports = {
                 attributes: (fields !== '*' && fields != null) ? fields.split(',') : undefined,
                 limit: (!isNaN(limit)) ? limit : 20,
                 offset: (!isNaN(offset)) ? offset : 0,
-                include: [{
-                    model: models.User,
-                    attributes: ['email'],
-                     include: [{
-                        model: models.Profile,
-                        as: "Profile",
-                        attributes: ["firstName", "lastName"],
-                    }, ],
-                }]
             });
 
             if (!messages || messages.length === 0) {
@@ -172,8 +116,7 @@ module.exports = {
             const enrichedMessages = await Promise.all(
                 messages.map(async (message) => {
                     const messagePlain = message.get({ plain: true });
-                    const isLocale = (messagePlain.categ || '').toLowerCase() === 'presse-locale';
-                    const mediaBase = isLocale ? MEDIA_LOCALE_BACKEND_URL : MEDIA_BACKEND_URL;
+                    const mediaBase = MEDIA_PRESSE_GLE_URL;
 
                     try {
                         const controller = new AbortController();
@@ -211,10 +154,8 @@ module.exports = {
     },
 
     updateMessage: async function (req, res) {
-        const headerAuth = req.headers['authorization'];
-        const userId = jwtUtils.getUserId(headerAuth);
         const messageId = parseInt(req.params.id);
-        const { title, content, link, attachment } = req.body;
+        const { title, content, attachment } = req.body;
 
         try {
             const message = await models.Message.findOne({ where: { id: messageId } });
@@ -223,16 +164,11 @@ module.exports = {
                 return res.status(404).json({ error: 'Message not found' });
             }
 
-            // Vérifier que l'utilisateur est admin
-            const user = await models.User.findOne({ where: { id: userId } });
-            if (!user || !user.isAdmin) {
-                return res.status(403).json({ error: 'Access denied: Admin only' });
-            }
-
+            // Admin déjà vérifié par isAdminMiddleware
+            // PresseGle : title, content, attachment uniquement
             await message.update({
-                title: title || message.title,
-                content: content || message.content,
-                link: link !== undefined ? link : message.link,
+                title: title !== undefined ? title : message.title,
+                content: content !== undefined ? content : message.content,
                 attachment: attachment !== undefined ? attachment : message.attachment
             });
 
@@ -244,8 +180,6 @@ module.exports = {
     },
 
     deleteMessage: async function (req, res) {
-        const headerAuth = req.headers['authorization'];
-        const userId = jwtUtils.getUserId(headerAuth);
         const messageId = parseInt(req.params.id);
 
         try {
@@ -255,12 +189,7 @@ module.exports = {
                 return res.status(404).json({ error: 'Message not found' });
             }
 
-            // Vérifier que l'utilisateur est admin
-            const user = await models.User.findOne({ where: { id: userId } });
-            if (!user || !user.isAdmin) {
-                return res.status(403).json({ error: 'Access denied: Admin only' });
-            }
-
+            // Admin déjà vérifié par isAdminMiddleware
             await message.destroy();
 
             res.status(200).json({ message: 'Message deleted successfully' });

@@ -1,7 +1,7 @@
 // File: lespremices/frontend/src/app/App.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import '../styles/main.scss';
 import HamburgerIcon from '../components/hamburgerIcon/HamburgerIcon';
 import PageContent from '../components/pageContent/PageContent';
@@ -43,7 +43,6 @@ function App() {
   const [, setPanneau] = useState(panneau1536); // valeur par défaut (panneau responsive non affiché)
   const [openSubmenu, setOpenSubmenu] = useState(null);
 
-  const dispatch = useDispatch();
   const token = localStorage.getItem("accessToken");
   
   // ✅ Memoïser le décodage du token pour éviter de recréer l'objet à chaque render
@@ -76,7 +75,6 @@ function App() {
   };
 
   // ✅ Initialisation + resize
-  // À chaque chargement / réactualisation de la page : invalider la session (timer à zéro, logout).
   useEffect(() => {
     updatePanneau();
     window.addEventListener('resize', updatePanneau);
@@ -90,18 +88,10 @@ function App() {
       }
     }
 
-    // Pas de restauration de session : à chaque réinitialisation d’URL, on remet le timer à zéro et on déconnecte.
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('sessionJustLoggedIn');
-    dispatch({ type: 'LOGOUT' });
-    window.location.hash = 'auth';
-    setActivePage('auth');
-
     return () => {
       window.removeEventListener('resize', updatePanneau);
     };
-  }, [dispatch]);
+  }, []);
 
   // ✅ Écouter les changements de hash (utile pour Cypress et back/forward du navigateur)
   useEffect(() => {

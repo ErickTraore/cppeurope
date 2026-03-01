@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 
 const USER_API = process.env.REACT_APP_USER_API;
+const PRESSE_GENERALE_API = process.env.REACT_APP_PRESSE_GENERALE_API || USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 
 const FormArticlePhoto = () => {
@@ -79,8 +80,8 @@ const FormArticlePhoto = () => {
     setSuccessMessage('');
 
     try {
-      console.log('📝 Envoi du formulaire à:', `${USER_API}/messages/new`);
-      const messageResponse = await fetch(`${USER_API}/messages/new`, {
+      console.log('📝 Envoi du formulaire à:', `${PRESSE_GENERALE_API}/messages/new`);
+      const messageResponse = await fetch(`${PRESSE_GENERALE_API}/messages/new`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -114,7 +115,7 @@ const FormArticlePhoto = () => {
       // Mettre à jour l'article avec le nom de l'image si l'upload a réussi
       if (uploadedFilename) {
         try {
-          const updateResponse = await fetch(`${USER_API}/users/messages/${newMessageId}`, {
+          const updateResponse = await fetch(`${PRESSE_GENERALE_API}/messages/${newMessageId}`, {
             method: 'PUT',
             headers: {
               Authorization: `Bearer ${localStorage.getItem('accessToken')}`,

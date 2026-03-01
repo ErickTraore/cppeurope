@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { triggerFormatReset } from '../../../utils/formatController';
 
 const USER_API = process.env.REACT_APP_USER_API;
+const PRESSE_GENERALE_API = process.env.REACT_APP_PRESSE_GENERALE_API || USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 
 const FormArticleThumbnailVideo = () => {
@@ -92,7 +93,7 @@ const FormArticleThumbnailVideo = () => {
     setSuccessMessage('');
 
     try {
-      const messageResponse = await fetch(`${USER_API}/messages/new/`, {
+      const messageResponse = await fetch(`${PRESSE_GENERALE_API}/messages/new/`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,

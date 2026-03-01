@@ -10,7 +10,7 @@ describe('Presse Générale - Create (option 1: titre + contenu)', () => {
   const contenu = 'E2E Contenu article presse générale.';
   const titreRemplace = 'titre remplacé';
   const contenuRemplace = "Votre texte a été remplacé pour des raisons d'optimisation.";
-  const apiMessages = () => Cypress.config('baseUrl') + '/api/users/messages/';
+  const apiMessages = () => Cypress.config('baseUrl') + '/api/presse-generale/messages/';
   // option1
   let titre;
   let createdMessage;

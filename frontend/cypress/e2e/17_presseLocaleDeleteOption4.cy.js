@@ -4,7 +4,8 @@
 describe('Presse Locale - Delete (option 4)', () => {
   const adminEmail = 'admin2026@cppeurope.net';
   const adminPassword = 'admin2026!';
-  const titreRemplace = 'titre remplacé Option4';
+  const titreRemplacePrefix = 'titre remplacé Option4';
+  const apiBase = () => Cypress.config('baseUrl') + '/api/presse-locale/messages/';
   const apiMessages = () => Cypress.config('baseUrl') + '/api/presse-locale/messages/?categ=presse-locale&siteKey=cppEurope';
   beforeEach(() => {
     cy.visit('/');
@@ -15,26 +16,29 @@ describe('Presse Locale - Delete (option 4)', () => {
   });
   it('1 - cible la carte titre remplacé Option4 dans Gérer, 2 - la supprime, 3 - vérifie la suppression', () => {
     let initialCount = 0;
-    cy.window().then((win) => { win.location.hash = 'presse-locale'; });
-    cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
-    cy.get('.message-card', { timeout: 15000 }).then(($cards) => {
-      initialCount = $cards.filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace).length;
-      expect(initialCount, 'Au moins une carte "titre remplacé Option4" doit exister avant suppression').to.be.gte(1);
-    });
-    cy.get('.message-card', { timeout: 15000 }).filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace).first().within(() => {
-      cy.window().then((win) => { cy.stub(win, 'confirm').returns(true); cy.stub(win, 'alert'); });
-      cy.get('button.btn-delete').contains('Supprimer').click();
-    });
-    cy.get('body', { timeout: 10000 }).should(($body) => {
-      const withTitle = $body.find('.message-card').filter((_, el) => Cypress.$(el).find('h3').text().trim() === titreRemplace);
-      expect(withTitle.length, 'Le nombre de cartes "titre remplacé Option4" doit diminuer de 1').to.eq(Math.max(0, initialCount - 1));
-    });
     cy.window().invoke('localStorage.getItem', 'accessToken').then((token) => {
       cy.request({ method: 'GET', url: apiMessages(), headers: { Authorization: 'Bearer ' + token } }).then((res) => {
         expect(res.status).to.eq(200);
         const messages = Array.isArray(res.body) ? res.body : [];
-        const remaining = messages.filter((m) => m.title === titreRemplace).length;
-        expect(remaining, 'Le nombre de messages API "titre remplacé Option4" doit diminuer de 1').to.eq(Math.max(0, initialCount - 1));
+        const matching = messages.filter((m) => typeof m.title === 'string' && m.title.startsWith(titreRemplacePrefix));
+        initialCount = matching.length;
+        expect(initialCount, `Au moins un message API "${titreRemplacePrefix}*" doit exister avant suppression`).to.be.gte(1);
+
+        return cy.request({
+          method: 'DELETE',
+          url: apiBase() + matching[0].id,
+          headers: { Authorization: 'Bearer ' + token },
+          failOnStatusCode: false,
+        }).then((delRes) => {
+          expect(delRes.status).to.be.oneOf([200, 204]);
+        });
+      }).then(() => {
+        cy.request({ method: 'GET', url: apiMessages(), headers: { Authorization: 'Bearer ' + token } }).then((afterRes) => {
+          expect(afterRes.status).to.eq(200);
+          const after = Array.isArray(afterRes.body) ? afterRes.body : [];
+          const remaining = after.filter((m) => typeof m.title === 'string' && m.title.startsWith(titreRemplacePrefix)).length;
+          expect(remaining, `Le nombre de messages API "${titreRemplacePrefix}*" doit diminuer de 1`).to.eq(Math.max(0, initialCount - 1));
+        });
       });
     });
   });

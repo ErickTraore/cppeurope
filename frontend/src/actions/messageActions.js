@@ -3,13 +3,14 @@
 import { FETCH_MESSAGES } from './types';
 
 const USER_API = process.env.REACT_APP_USER_API;
+const PRESSE_GENERALE_API = process.env.REACT_APP_PRESSE_GENERALE_API || USER_API;
 
 export const fetchMessages = (categ = null) => {
   return async dispatch => {
     try {
       const url = categ 
-        ? `${USER_API}/messages/?categ=${categ}`
-        : `${USER_API}/messages/`;
+        ? `${PRESSE_GENERALE_API}/messages/?categ=${categ}`
+        : `${PRESSE_GENERALE_API}/messages/`;
         
       const response = await fetch(url, {
         method: 'GET',
@@ -34,7 +35,7 @@ export const fetchMediaForMessages = (messageIds) => async (dispatch) => {
   try {
     const mediaData = {};
     for (const messageId of messageIds) {
-      const response = await fetch(`${USER_API}/message/${messageId}`);
+      const response = await fetch(`${PRESSE_GENERALE_API}/message/${messageId}`);
       const data = await response.json();
       mediaData[messageId] = data;
     }
@@ -55,7 +56,7 @@ export const addMessage = (formData) => {
         content: formData.get('content'),
       };
 
-      await fetch(`${USER_API}/messages`, {
+      await fetch(`${PRESSE_GENERALE_API}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

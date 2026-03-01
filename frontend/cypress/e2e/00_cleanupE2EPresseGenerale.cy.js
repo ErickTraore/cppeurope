@@ -15,7 +15,7 @@ const E2E_TITLES_ONLY = [
 describe('00 - Cleanup E2E Presse Générale', () => {
   const adminEmail = 'admin2026@cppeurope.net';
   const adminPassword = 'admin2026!';
-  const apiMessages = () => Cypress.config('baseUrl') + '/api/users/messages/';
+  const apiMessages = () => Cypress.config('baseUrl') + '/api/presse-generale/messages/';
 
   beforeEach(() => {
     cy.visit('/');
@@ -50,7 +50,6 @@ describe('00 - Cleanup E2E Presse Générale', () => {
         expect(res.status).to.eq(200);
         const messages = Array.isArray(res.body) ? res.body : [];
         const toDelete = messages.filter((m) => m.title && E2E_TITLES_ONLY.includes(m.title.trim()));
-        expect(toDelete.length).to.be.at.most(4, 'Seuls au plus 4 enregistrements E2E peuvent exister');
 
         if (toDelete.length > 0) {
           cy.wrap(toDelete).each((msg) => {

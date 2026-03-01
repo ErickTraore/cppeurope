@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 
 const USER_API = process.env.REACT_APP_USER_API;
+const PRESSE_GENERALE_API = process.env.REACT_APP_PRESSE_GENERALE_API || USER_API;
 
 const FormArticle = () => {
   const [newMessage, setNewMessage] = useState({
@@ -38,7 +39,7 @@ const FormArticle = () => {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`${USER_API}/messages/new`, {
+      const response = await fetch(`${PRESSE_GENERALE_API}/messages/new`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,

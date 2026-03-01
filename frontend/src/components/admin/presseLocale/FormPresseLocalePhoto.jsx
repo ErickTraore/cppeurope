@@ -95,7 +95,7 @@ const FormPresseLocalePhoto = () => {
 
       if (uploadedFilename) {
         try {
-          const updateResponse = await fetch(`${USER_API}/users/messages/${newMessageId}`, {
+          const updateResponse = await fetch(`${USER_API}/messages/${newMessageId}`, {
             method: 'PUT',
             headers: {
               Authorization: `Bearer ${localStorage.getItem('accessToken')}`,

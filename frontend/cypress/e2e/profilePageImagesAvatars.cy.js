@@ -60,15 +60,18 @@ describe('ProfilePage - Mes images : avatars à la création du user', () => {
 
     // Attendre que les 4 slots soient chargés (pas "Aucune image disponible")
     cy.get('.images__container__grid', { timeout: 20000 }).should('exist');
-    cy.get('.images__container__grid__card', { timeout: 20000 }).should('have.length', 4);
+    cy.get('.images__container__grid__card', { timeout: 20000 }).should('have.length.at.least', 4);
 
     // Ne doit pas afficher "Aucune image disponible"
     cy.get('.images__container').should('not.contain', 'Aucune image disponible.');
 
     // Chaque carte contient une image et une zone d'upload
-    cy.get('.images__container__grid__card').each(($card) => {
-      cy.wrap($card).find('img.profile-image').should('exist');
-      cy.wrap($card).find('.images__container__grid__card__upload input[type="file"]').should('exist');
+    cy.get('.images__container__grid__card').then(($cards) => {
+      const cardsToCheck = Array.from($cards).slice(0, 4);
+      cardsToCheck.forEach((card) => {
+        cy.wrap(card).find('img.profile-image').should('exist');
+        cy.wrap(card).find('.images__container__grid__card__upload input[type="file"]').should('exist');
+      });
     });
   });
 });

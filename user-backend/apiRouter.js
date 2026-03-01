@@ -4,7 +4,6 @@ const express = require('express');
 const cors = require('cors');
 const usersCtrl = require('./routes/usersCtrl');
 const authMiddleware = require('./middleware/authMiddleware');
-const messagesCtrl = require('./routes/messagesCtrl');
 const sessionCtrl = require('./routes/sessionCtrl');
 const profileCtrl = require('./routes/infoProfileCtrl');
 const zoomCtrl = require('./routes/zoomCtrl');
@@ -27,10 +26,6 @@ exports.router = (function () {
     apiRouter.route('/users/extend-session').post(refreshAuthMiddleware, usersCtrl.extendSession);
     apiRouter.route('/users/:id').delete(authMiddleware, isAdminMiddleware, usersCtrl.deleteUser);
     apiRouter.route('/users/:id').put(authMiddleware, isAdminMiddleware, usersCtrl.updateUserById);
-    apiRouter.route('/users/messages/new/').post(authMiddleware, isAdminMiddleware, messagesCtrl.createMessage);
-    apiRouter.route('/users/messages/').get(authMiddleware, messagesCtrl.listMessages);
-    apiRouter.route('/users/messages/:id').put(authMiddleware, isAdminMiddleware, messagesCtrl.updateMessage);
-    apiRouter.route('/users/messages/:id').delete(authMiddleware, isAdminMiddleware, messagesCtrl.deleteMessage);
     apiRouter.route('/zoom/signature').get(zoomCtrl.getSignature);
     
     apiRouter.route('/users/infoProfile/user').get(authMiddleware, infoProfileCtrl.getInfoProfile);

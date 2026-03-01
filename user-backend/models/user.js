@@ -13,9 +13,6 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     User.associate = (models) => {
-        // Relation avec les messages
-        User.hasMany(models.Message, { foreignKey: 'userId' });
-
         // Relation avec le profil
         User.hasOne(models.Profile, {
             foreignKey: 'userId',

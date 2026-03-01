@@ -9,12 +9,47 @@ services:
       - ./user-backend/.env.production
     environment:
       NODE_ENV: production
+      ALLOWED_ORIGINS: https://cppeurope.net,https://www.cppeurope.net,http://localhost:8082
     command: bash -c "node server.prod.js"
     depends_on:
       - mariadb
     restart: always
     ports:
       - "7003:7003"
+
+  presse-generale-backend:
+    image: node:20
+    working_dir: /usr/src/app
+    volumes:
+      - ./presseGenerale-backend:/usr/src/app
+    env_file:
+      - ./presseGenerale-backend/.env.production
+    environment:
+      NODE_ENV: production
+      ALLOWED_ORIGINS: https://cppeurope.net,https://www.cppeurope.net,http://localhost:8082
+    command: bash -c "npm install && node server.prod.js"
+    depends_on:
+      - mariadb
+    restart: always
+    ports:
+      - "7006:7006"
+
+  presse-locale-backend:
+    image: node:20
+    working_dir: /usr/src/app
+    volumes:
+      - ./presseLocale-backend:/usr/src/app
+    env_file:
+      - ./presseLocale-backend/.env.production
+    environment:
+      NODE_ENV: production
+      DB_NAME: user_prod_cppeurope_v1
+      PORT: 7005
+      ALLOWED_ORIGINS: https://cppeurope.net,https://www.cppeurope.net,http://localhost:8082
+    command: bash -c "npm install && npx sequelize-cli db:migrate && node server.prod.js"
+    depends_on:
+      - mariadb
+    restart: always
 
   mariadb:
     image: mariadb:11
@@ -33,6 +68,8 @@ services:
     image: nginx:stable
     depends_on:
       - user-backend
+      - presse-generale-backend
+      - presse-locale-backend
     ports:
       - "8082:80"
 

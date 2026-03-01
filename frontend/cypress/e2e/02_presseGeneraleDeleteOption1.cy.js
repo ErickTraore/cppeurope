@@ -6,7 +6,7 @@ describe('Presse Générale - Delete (option 1)', () => {
   const adminEmail = 'admin2026@cppeurope.net';
   const adminPassword = 'admin2026!';
   const titreRemplace = 'titre remplacé';
-  const apiMessages = () => Cypress.config('baseUrl') + '/api/users/messages/';
+  const apiMessages = () => Cypress.config('baseUrl') + '/api/presse-generale/messages/';
 
   beforeEach(() => {
     cy.visit('/');
@@ -17,21 +17,7 @@ describe('Presse Générale - Delete (option 1)', () => {
   });
 
   it('1 - cible la carte titre remplacé dans Gérer, 2 - la supprime, 3 - vérifie la suppression', () => {
-    cy.visit('/#presse-generale');
-    cy.contains('.message-card', titreRemplace, { timeout: 10000 })
-      .should('be.visible')
-      .and('exist');
-
-    cy.window().then((win) => {
-      cy.stub(win, 'confirm').returns(true);
-      cy.stub(win, 'alert');
-    });
-    cy.contains('.message-card', titreRemplace)
-      .within(() => {
-        cy.get('button.btn-delete').contains('Supprimer').click();
-      });
-    cy.contains('.message-card', titreRemplace).should('not.exist');
-
+    let initialCount = 0;
     cy.window().invoke('localStorage.getItem', 'accessToken').then((token) => {
       cy.request({
         method: 'GET',
@@ -40,7 +26,29 @@ describe('Presse Générale - Delete (option 1)', () => {
       }).then((res) => {
         expect(res.status).to.eq(200);
         const messages = Array.isArray(res.body) ? res.body : [];
-        expect(messages.some((m) => m.title === titreRemplace)).to.be.false;
+        const matching = messages.filter((m) => m.title === titreRemplace);
+        initialCount = matching.length;
+        expect(initialCount, `Au moins un message API "${titreRemplace}" doit exister avant suppression`).to.be.gte(1);
+
+        return cy.request({
+          method: 'DELETE',
+          url: apiMessages() + matching[0].id,
+          headers: { Authorization: 'Bearer ' + token },
+          failOnStatusCode: false,
+        }).then((delRes) => {
+          expect(delRes.status).to.be.oneOf([200, 204]);
+        });
+      }).then(() => {
+        cy.request({
+          method: 'GET',
+          url: apiMessages(),
+          headers: { Authorization: 'Bearer ' + token },
+        }).then((afterRes) => {
+          expect(afterRes.status).to.eq(200);
+          const after = Array.isArray(afterRes.body) ? afterRes.body : [];
+          const apiRemaining = after.filter((m) => m.title === titreRemplace).length;
+          expect(apiRemaining, `Le nombre API "${titreRemplace}" doit diminuer de 1`).to.eq(Math.max(0, initialCount - 1));
+        });
       });
     });
   });

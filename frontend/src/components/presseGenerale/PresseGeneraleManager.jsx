@@ -6,7 +6,17 @@ import { fetchMessages } from '../../actions/messageActions';
 import './PresseGeneraleManager.css';
 
 const USER_API = process.env.REACT_APP_USER_API;
+const PRESSE_GENERALE_API = process.env.REACT_APP_PRESSE_GENERALE_API || USER_API;
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
+
+const getAllowedTypesFromTitle = (title = '') => {
+  const normalized = String(title).toUpperCase();
+  if (normalized.includes('TITRE+PHOTO+VID')) return { image: true, video: true };
+  if (normalized.includes('TITRE+PHOTO')) return { image: true, video: false };
+  if (normalized.includes('TITRE+VIDEO') || normalized.includes('TITRE+VID')) return { image: false, video: true };
+  if (normalized.includes('TITRE')) return { image: false, video: false };
+  return null;
+};
 
 const PresseGeneraleManager = () => {
   const dispatch = useDispatch();
@@ -67,7 +77,22 @@ const PresseGeneraleManager = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`${USER_API}/messages/${editingId}`, {
+      const mediaForMessage = Array.isArray(messageMedia[editingId]) ? messageMedia[editingId] : [];
+      const currentMessage = messagesList.find((m) => m.id === editingId);
+      const allowedByTitle = getAllowedTypesFromTitle(currentMessage?.title || formData.title || '');
+
+      if (allowedByTitle) {
+        if (imageFile && !allowedByTitle.image) {
+          alert('❌ Format non autorisé: cet article ne peut pas recevoir d\'image.');
+          return;
+        }
+        if (videoFile && !allowedByTitle.video) {
+          alert('❌ Format non autorisé: cet article ne peut pas recevoir de vidéo.');
+          return;
+        }
+      }
+
+      const res = await fetch(`${PRESSE_GENERALE_API}/messages/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)
@@ -75,9 +100,9 @@ const PresseGeneraleManager = () => {
       if (!res.ok) throw new Error('Erreur');
 
       if (imageFile) {
-        const existingImage = messageMedia[editingId]?.find(m => m.type === 'image');
-        if (existingImage) {
-          await fetch(`${MEDIA_API}/media/${existingImage.id}`, {
+        const existingImages = mediaForMessage.filter((m) => (m.type || '').toLowerCase() === 'image');
+        for (const media of existingImages) {
+          await fetch(`${MEDIA_API}/media/${media.id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -93,9 +118,9 @@ const PresseGeneraleManager = () => {
       }
 
       if (videoFile) {
-        const existingVideo = messageMedia[editingId]?.find(m => m.type === 'video');
-        if (existingVideo) {
-          await fetch(`${MEDIA_API}/media/${existingVideo.id}`, {
+        const existingVideos = mediaForMessage.filter((m) => (m.type || '').toLowerCase() === 'video');
+        for (const media of existingVideos) {
+          await fetch(`${MEDIA_API}/media/${media.id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -121,7 +146,7 @@ const PresseGeneraleManager = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('⚠️ Supprimer ?')) return;
     try {
-      const res = await fetch(`${USER_API}/messages/${id}`, {
+      const res = await fetch(`${PRESSE_GENERALE_API}/messages/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem("accessToken")}` }
       });
