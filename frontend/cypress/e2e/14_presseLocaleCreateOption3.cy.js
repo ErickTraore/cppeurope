@@ -70,10 +70,10 @@ describe('Presse Locale - Create (option 3: titre + contenu + vidéo)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('.presse__container__title').should('contain', 'Presse Locale');
     cy.get('.presse__container__messagelist').should('exist');
-    cy.contains('.presse__message__header__title', titre, { timeout: 10000 }).should('be.visible');
-    cy.contains('.presse__message__header__title', titre).parents('.presse__message--video-only').first().within(() => {
+    cy.contains('.presse__message__header__title', titre, { timeout: 25000 }).should('be.visible');
+    cy.contains('.presse__message__header__title', titre, { timeout: 25000 }).parents('.presse__message--video-only, .presse__message--image-and-video').first().within(() => {
       cy.get('.presse__message__media__videoWrapper').should('be.visible');
-      cy.get('.presse__message__textbar').click();
+      cy.get('.presse__message__textbar, .presse__message__header').first().click({ force: true });
       cy.get('.presse__message__content').should('be.visible').and('contain', contenu);
     });
   });

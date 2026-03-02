@@ -61,10 +61,13 @@ describe('Presse Locale - Create (option 1: titre + contenu)', () => {
     cy.get('div.App.authenticated', { timeout: 15000 }).should('exist');
     cy.get('.presse__container__title').should('contain', 'Presse Locale');
     cy.get('.presse__container__messagelist').should('exist');
-    cy.get('.presse__message--text-only', { timeout: 25000 }).should('have.length.at.least', 1).first().within(() => {
-      cy.get('.presse__message__header').click();
-      cy.get('.presse__message__content').should('be.visible').invoke('text').should('match', /\S+/);
-    });
+    cy.contains('.presse__message__header__title', titre, { timeout: 25000 }).should('be.visible');
+    cy.contains('.presse__message__header__title', titre, { timeout: 25000 })
+      .closest('.presse__message, .presse__message--text-only')
+      .within(() => {
+        cy.get('.presse__message__header, .presse__message__textbar').first().click({ force: true });
+        cy.get('.presse__message__content', { timeout: 10000 }).should('be.visible').and('contain', contenu);
+      });
   });
   it('remplace le titre et le contenu via API et vérifie en Gérer', () => {
     expect(createdMessage, 'createdMessage défini par test précédent').to.exist;
