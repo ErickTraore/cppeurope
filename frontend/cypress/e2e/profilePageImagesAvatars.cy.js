@@ -8,8 +8,8 @@
  *   npx cypress run --spec "cypress/e2e/profilePageImagesAvatars.cy.js"
  */
 describe('ProfilePage - Mes images : avatars à la création du user', () => {
-  const baseUrl = Cypress.config('baseUrl');
-  const registerUrl = `${baseUrl}/api/users/register/`;
+  const apiBaseUrl = Cypress.config('env')?.apiBaseUrl || 'http://localhost:8082';
+  const registerUrl = `${apiBaseUrl}/api/users/register/`;
   let userEmail;
   const userPassword = 'Test1234';
 
@@ -60,7 +60,7 @@ describe('ProfilePage - Mes images : avatars à la création du user', () => {
 
     // Attendre que les 4 slots soient chargés (pas "Aucune image disponible")
     cy.get('.images__container__grid', { timeout: 20000 }).should('exist');
-    cy.get('.images__container__grid__card', { timeout: 20000 }).should('have.length.at.least', 4);
+    cy.get('.images__container__grid__card', { timeout: 20000 }).should('have.length', 4);
 
     // Ne doit pas afficher "Aucune image disponible"
     cy.get('.images__container').should('not.contain', 'Aucune image disponible.');
@@ -69,7 +69,14 @@ describe('ProfilePage - Mes images : avatars à la création du user', () => {
     cy.get('.images__container__grid__card').then(($cards) => {
       const cardsToCheck = Array.from($cards).slice(0, 4);
       cardsToCheck.forEach((card) => {
-        cy.wrap(card).find('img.profile-image').should('exist');
+        cy.wrap(card)
+          .find('img.profile-image')
+          .should('exist')
+          .and(($img) => {
+            const imageElement = $img[0];
+            expect(imageElement.naturalWidth).to.be.greaterThan(0);
+            expect(imageElement.naturalHeight).to.be.greaterThan(0);
+          });
         cy.wrap(card).find('.images__container__grid__card__upload input[type="file"]').should('exist');
       });
     });
