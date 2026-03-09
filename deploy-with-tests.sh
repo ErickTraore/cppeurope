@@ -53,3 +53,7 @@ echo "Pour déployer maintenant:"
 echo "  - docker compose down && docker compose up -d --build"
 echo "  - ou copiez le build/ vers votre serveur"
 echo ""
+# 5. Redémarrage automatique des conteneurs Docker (production)
+echo "🔄 Redémarrage automatique des conteneurs Docker..."
+docker compose down && docker compose up -d --build
+echo "✅ Conteneurs Docker redémarrés. Déploiement terminé."
