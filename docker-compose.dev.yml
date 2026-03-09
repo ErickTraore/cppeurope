@@ -1,0 +1,7 @@
+services:
+  user-backend:
+    command: bash -c "npm install && NODE_ENV=development node server.dev.js"
+    env_file:
+      - ./user-backend/.env.development
+    environment:
+      NODE_ENV: development

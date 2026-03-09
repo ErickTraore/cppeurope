@@ -5,8 +5,24 @@ import { useDispatch } from 'react-redux';
 import { jwtDecode } from 'jwt-decode';
 import Spinner from '../common/Spinner';
 
-const USER_API = process.env.REACT_APP_USER_API;
-const expiryWarning = parseInt(process.env.REACT_APP_SESSION_EXPIRY_WARNING, 10) || 80;
+const resolveUserApi = () => {
+  const fallback = 'http://localhost:8082/api/users';
+  const raw = (process.env.REACT_APP_USER_API || fallback).trim();
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.port === '6000') {
+      parsed.port = '8082';
+      return parsed.toString().replace(/\/$/, '');
+    }
+    return raw.replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+};
+
+const USER_API = resolveUserApi();
+const expiryWarning = parseInt(process.env.REACT_APP_SESSION_EXPIRY_WARNING, 10) || 60;
 
 // Contexte pour partager timeLeft et l'état de phase session entre SessionManager et SessionTimer
 const SessionContext = createContext({
@@ -43,7 +59,7 @@ export const SessionProvider = ({ children, isAuthenticated = false, accessToken
     }
   };
 
-  // Après login, démarrer à 80s puis attendre la prolongation
+  // Après login, démarrer à 60s puis attendre la prolongation
   useEffect(() => {
     const wasAuth = prevAuthRef.current;
     prevAuthRef.current = isAuthenticated;
@@ -61,7 +77,7 @@ export const SessionProvider = ({ children, isAuthenticated = false, accessToken
       lastTokenRef.current = accessToken; // Éviter de confondre avec une prolongation au prochain render
       setIsInitialSession(true);
       setJustLoggedIn(true);
-      setTimeLeft(expiryWarning); // 80s après login (ou REACT_APP_SESSION_EXPIRY_WARNING)
+      setTimeLeft(expiryWarning); // 60s après login (ou REACT_APP_SESSION_EXPIRY_WARNING)
       sessionStorage.setItem('sessionJustLoggedIn', '1'); // Flag pour modale
     }
 
@@ -75,7 +91,7 @@ export const SessionProvider = ({ children, isAuthenticated = false, accessToken
     }
   }, [isAuthenticated, accessToken]);
 
-  // Timer 80s après login/prolongation
+  // Timer 60s après login/prolongation
   useEffect(() => {
     if (!isAuthenticated) return;
     if (isInitialSession && justLoggedIn) {
@@ -230,7 +246,7 @@ const SessionManager = () => {
     }
   };
 
-  // Afficher la modale immédiatement après login (le Provider gère le timer 80s)
+  // Afficher la modale immédiatement après login (le Provider gère le timer 60s)
   useEffect(() => {
     const sessionJustLoggedIn = sessionStorage.getItem('sessionJustLoggedIn') === '1';
     const hash = window.location.hash.slice(1);
@@ -239,7 +255,7 @@ const SessionManager = () => {
       hasInitialized.current = true;
       setShowModal(true);
       sessionStorage.removeItem('sessionJustLoggedIn');
-      console.log('🔔 Modale de session affichée (timer 80s géré par SessionProvider)');
+      console.log('🔔 Modale de session affichée (timer 60s géré par SessionProvider)');
     }
   }, []);
 
@@ -250,10 +266,10 @@ const SessionManager = () => {
   }, [showModal, timeLeft, handleLogout]);
 
   // 🔁 Déconnexion automatique lorsque le timer "réel" (≈30 min) arrive à 0
-  // Sans cliquer sur quoi que ce soit, on reproduit le comportement du timer 80s :
+  // Sans cliquer sur quoi que ce soit, on reproduit le comportement du timer 60s :
   // redirection vers /#auth via handleLogout.
   // On se limite aux cas où la modale n'est pas affichée ET où on est en phase "réelle" (après prolongation)
-  // pour ne pas perturber la phase initiale 80s ni le montage initial.
+  // pour ne pas perturber la phase initiale 60s ni le montage initial.
   useEffect(() => {
     if (!showModal && !isInitialSession && !justLoggedIn && timeLeft <= 0) {
       handleLogout();

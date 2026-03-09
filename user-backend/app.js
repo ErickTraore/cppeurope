@@ -4,13 +4,20 @@ const path = require('path');
 const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
-const { getSignature } = require('./routes/zoomCtrl');
 const apiRouter = require('./apiRouter').router;
+
+let getSignature = null;
+try {
+  ({ getSignature } = require('./routes/zoomCtrl'));
+} catch (err) {
+  console.warn('⚠️ Route zoom désactivée: routes/zoomCtrl introuvable');
+}
 
 const app = express();
 
-// 🔐 Charger .env.production en prod
-dotenv.config({ path: path.join(__dirname, '.env.production') });
+const env = process.env.NODE_ENV || 'development';
+const envFile = env === 'production' ? '.env.production' : `.env.${env}`;
+dotenv.config({ path: path.join(__dirname, envFile) });
 
 // 🧩 Construire ALLOWED_ORIGINS à partir de REACT_APP_URL si non défini
 // ex: REACT_APP_URL=https://lespremices.com
@@ -65,7 +72,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // 🔁 Routes
 app.get('/', (req, res) => res.status(200).send('USER-BACKEND (prod) actif'));
-app.get('/api/zoom/signature', getSignature);
+if (typeof getSignature === 'function') {
+  app.get('/api/zoom/signature', getSignature);
+}
 app.use('/api', apiRouter);
 
 module.exports = app;

@@ -2,9 +2,9 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-// ON CHARGE SEULEMENT LES VARIABLES SENSIBLES (.env.production),
-// PAS NODE_ENV (déjà fixé par Docker)
-dotenv.config({ path: path.join(__dirname, '..', '.env.production') });
+const env = process.env.NODE_ENV || 'development';
+const envFile = env === 'production' ? '.env.production' : `.env.${env}`;
+dotenv.config({ path: path.join(__dirname, '..', envFile) });
 
 module.exports = {
   development: {
@@ -12,6 +12,7 @@ module.exports = {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST, // force localhost
+    port: process.env.DB_PORT || 3306,
     dialect: process.env.DB_DIALECT || 'mysql'
   },
   test: {
@@ -19,6 +20,7 @@ module.exports = {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST, // force localhost
+    port: process.env.DB_PORT || 3306,
     dialect: process.env.DB_DIALECT || 'mysql'
   },
   production: {
