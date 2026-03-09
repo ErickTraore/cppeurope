@@ -17,23 +17,6 @@ services:
     ports:
       - "7003:7003"
 
-  presse-generale-backend:
-    image: node:20
-    working_dir: /usr/src/app
-    volumes:
-      - ./presseGenerale-backend:/usr/src/app
-    env_file:
-      - ./presseGenerale-backend/.env.production
-    environment:
-      NODE_ENV: production
-      ALLOWED_ORIGINS: https://cppeurope.net,https://www.cppeurope.net,http://localhost:8082
-    command: bash -c "npm install && node server.prod.js"
-    depends_on:
-      - mariadb
-    restart: always
-    ports:
-      - "7006:7006"
-
   mariadb:
     image: mariadb:11
     restart: always
@@ -51,7 +34,6 @@ services:
     image: nginx:stable
     depends_on:
       - user-backend
-      - presse-generale-backend
     ports:
       - "8082:80"
 

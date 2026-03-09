@@ -11,8 +11,41 @@ import {
 import Spinner from '../common/Spinner';
 import "../../styles/pages/ProfilePage.scss";
 
-const MEDIA_API = process.env.REACT_APP_MEDIA_API;
-console.log('[ProfilePage] MEDIA_API =', MEDIA_API);
+const resolveApiBase = (value, fallback) => {
+  const raw = (value || fallback).trim();
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.port === '6000') {
+      parsed.port = '8082';
+      return parsed.toString().replace(/\/$/, '');
+    }
+    return raw.replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+};
+
+const isFrontend3000 =
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'localhost' &&
+  window.location.port === '3000';
+
+const PROFILE_MEDIA_API = isFrontend3000
+  ? '/api/user-media-profile'
+  : resolveApiBase(
+      process.env.REACT_APP_PROFILE_MEDIA_API || process.env.REACT_APP_USER_MEDIA_PROFILE_API || process.env.REACT_APP_MEDIA_API,
+      'http://localhost:8082/api/user-media-profile'
+    );
+const PROFILE_MEDIA_ORIGIN = (() => {
+  if (isFrontend3000) return 'http://localhost:8082';
+  try {
+    return new URL(PROFILE_MEDIA_API).origin;
+  } catch {
+    return 'http://localhost:8082';
+  }
+})();
+console.log('[ProfilePage] PROFILE_MEDIA_API =', PROFILE_MEDIA_API);
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -70,6 +103,12 @@ const ProfilePage = () => {
     }
   }, [data, dispatch]);
 
+  useEffect(() => {
+    if (activeTab === 'images' && data?.id) {
+      dispatch(fetchProfileMedia(data.id));
+    }
+  }, [activeTab, data?.id, dispatch]);
+
   // ---- 3) Écoute d’un éventuel event "tokenUpdated" ----
   useEffect(() => {
     const handleTokenUpdate = () => {
@@ -106,22 +145,60 @@ const ProfilePage = () => {
   };
 
   // ---- 6) Upload d'image ----
-  const handleFileUpload = async (mediaId, file) => {
-    console.log('[ProfilePage] 📤 Début upload, mediaId =', mediaId, 'file =', file);
+  const handleFileUpload = async (media, file) => {
+    console.log('[ProfilePage] 📤 Début upload, media =', media, 'file =', file);
 
     if (!file) {
       console.warn('[ProfilePage] ❌ Aucun fichier sélectionné');
       return;
     }
 
-    setUploading((prev) => ({ ...prev, [mediaId]: true }));
+    const initialMediaId = media?.id;
+    const slotIndex = Number.isInteger(Number(media?.slot)) ? Number(media.slot) : 0;
+
+    if (!initialMediaId) {
+      console.warn('[ProfilePage] ❌ Media ID absent');
+      return;
+    }
+
+    setUploading((prev) => ({ ...prev, [initialMediaId]: true }));
 
     const formData = new FormData();
     formData.append('image', file);
-    console.log('[ProfilePage] FormData prêt, envoi vers', `${MEDIA_API}/uploadImageProfile`);
+    console.log('[ProfilePage] FormData prêt, envoi vers', `${PROFILE_MEDIA_API}/uploadImageProfile`);
 
     try {
-      const response = await fetch(`${MEDIA_API}/uploadImageProfile`, {
+      let targetMediaId = initialMediaId;
+
+      if (media?.isFallback) {
+        if (!data?.id) {
+          throw new Error('Profil introuvable pour créer un slot média');
+        }
+
+        const createSlotResponse = await fetch(`${PROFILE_MEDIA_API}/mediaProfile/`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            profileId: data.id,
+            filename: '',
+            path: `/mediaprofile/default/slot-${slotIndex}.png`,
+            type: 'image',
+            slot: slotIndex,
+          }),
+        });
+
+        const createSlotPayload = await createSlotResponse.json();
+        if (!createSlotResponse.ok || !createSlotPayload?.id) {
+          throw new Error('Impossible de créer le slot média manquant');
+        }
+
+        targetMediaId = createSlotPayload.id;
+      }
+
+      const response = await fetch(`${PROFILE_MEDIA_API}/uploadImageProfile`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -145,8 +222,8 @@ const ProfilePage = () => {
       const imageUrl = `/imagesprofile/${result.filename}`;
       console.log('[ProfilePage] ✅ URL image calculée =', imageUrl);
 
-      console.log('[ProfilePage] Dispatch updateProfileMedia avec mediaId =', mediaId);
-      await dispatch(updateProfileMedia(mediaId, { url: imageUrl }));
+      console.log('[ProfilePage] Dispatch updateProfileMedia avec mediaId =', targetMediaId);
+      await dispatch(updateProfileMedia(targetMediaId, { url: imageUrl }));
 
       console.log('[ProfilePage] Rechargement des médias avec userId =', data?.id);
       if (data?.id) {
@@ -155,10 +232,10 @@ const ProfilePage = () => {
         console.warn('[ProfilePage] Impossible de recharger les médias : data.id manquant');
       }
     } catch (err) {
-      console.error(`[ProfilePage] ❌ Erreur upload image (mediaId=${mediaId}) :`, err);
+      console.error(`[ProfilePage] ❌ Erreur upload image (mediaId=${initialMediaId}) :`, err);
     } finally {
-      console.log('[ProfilePage] 🔚 Fin upload pour mediaId =', mediaId);
-      setUploading((prev) => ({ ...prev, [mediaId]: false }));
+      console.log('[ProfilePage] 🔚 Fin upload pour mediaId =', initialMediaId);
+      setUploading((prev) => ({ ...prev, [initialMediaId]: false }));
     }
   };
 
@@ -179,23 +256,58 @@ const ProfilePage = () => {
   }
 
   const safeSlots = Array.isArray(slots) ? slots : [];
+  const toSlotIndex = (slotValue) => {
+    const numericSlot = Number(slotValue);
+    if (!Number.isInteger(numericSlot)) return null;
+    if (numericSlot >= 0 && numericSlot <= 3) return numericSlot;
+    if (numericSlot >= 1 && numericSlot <= 4) return numericSlot - 1;
+    return null;
+  };
+
+  const slotMap = new Map();
+  safeSlots.forEach((media) => {
+    const slotIndex = toSlotIndex(media?.slot);
+    if (slotIndex === null) return;
+    if (!slotMap.has(slotIndex)) {
+      slotMap.set(slotIndex, media);
+    }
+  });
+
+  const displaySlots = [0, 1, 2, 3].map((slotIndex) => {
+    const media = slotMap.get(slotIndex);
+    if (media) {
+      return {
+        ...media,
+        slot: slotIndex,
+      };
+    }
+
+    return {
+      id: `default-slot-${slotIndex}`,
+      slot: slotIndex,
+      path: `/mediaprofile/default/slot-${slotIndex}.png`,
+      isFallback: true,
+    };
+  });
   console.log('[ProfilePage] safeSlots (tableau) =', safeSlots);
 
   // Résolution d'URL : /imagesprofile et /mediaprofile sont servis par nginx en "same-origin"
   // et ne doivent PAS être préfixés par REACT_APP_MEDIA_API (/api/media), sinon 404.
   const resolveProfileMediaSrc = (path, slot) => {
-    const slotIndex = slot ?? 0;
-    const fallback = `/mediaprofile/default/slot-${slotIndex}.png`;
+    const slotIndex = Number.isInteger(Number(slot)) ? Number(slot) : 0;
+    const fallback = `${PROFILE_MEDIA_ORIGIN}/mediaprofile/default/slot-${slotIndex}.png`;
 
     if (!path) return fallback;
     if (typeof path !== 'string') return fallback;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
 
     // Ces chemins sont exposés directement par nginx (cf. /imagesprofile/ et /mediaprofile/)
-    if (path.startsWith('/imagesprofile/') || path.startsWith('/mediaprofile/')) return path;
+    if (path.startsWith('/imagesprofile/') || path.startsWith('/mediaprofile/')) {
+      return `${PROFILE_MEDIA_ORIGIN}${path}`;
+    }
 
     // Autres chemins : tenter via l'API media si configurée
-    if (path.startsWith('/') && MEDIA_API) return `${MEDIA_API}${path}`;
+    if (path.startsWith('/') && PROFILE_MEDIA_API) return `${PROFILE_MEDIA_API}${path}`;
     return fallback;
   };
 
@@ -291,24 +403,24 @@ const ProfilePage = () => {
       {activeTab === "images" && (
         <div className="images__container">
           {mediaLoading && <Spinner size="medium" text="Chargement des images..." />}
-          {mediaError && <p>Erreur : {mediaError}</p>}
-          {!mediaLoading &&
-            safeSlots.length === 0 &&
-            (Object.values(uploading).some(Boolean) ? (
-              <Spinner size="medium" text="Téléversement en cours..." />
-            ) : (
-              <p>Aucune image disponible.</p>
-            ))}
+          {mediaError && mediaError !== 'API injoignable (vérifie que localhost:8082 est démarré)' && <p>Erreur : {mediaError}</p>}
+          {!mediaLoading && Object.values(uploading).some(Boolean) && (
+            <Spinner size="medium" text="Téléversement en cours..." />
+          )}
 
           <div className="images__container__grid">
-            {safeSlots.map((media) => (
+            {displaySlots.map((media) => (
               <div key={media.id} className="images__container__grid__card">
                 <img
                   src={resolveProfileMediaSrc(media.path, media.slot)}
                   alt="ProfileImage"
                   className="profile-image"
-                  onError={(e) => {
-                    e.target.src = resolveProfileMediaSrc(null, media.slot);
+                  onError={(event) => {
+                    const imageElement = event.currentTarget;
+                    if (imageElement.dataset.fallbackApplied === '1') return;
+
+                    imageElement.dataset.fallbackApplied = '1';
+                    imageElement.src = resolveProfileMediaSrc(null, media.slot);
                   }}
                 />
 
@@ -317,7 +429,7 @@ const ProfilePage = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) =>
-                      handleFileUpload(media.id, e.target.files[0])
+                      handleFileUpload(media, e.target.files[0])
                     }
                     disabled={uploading[media.id]}
                   />

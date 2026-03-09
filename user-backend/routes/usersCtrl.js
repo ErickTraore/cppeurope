@@ -9,6 +9,8 @@ const models = require('../models');
 const asyncLib = require('async');
 const MEDIA_API = process.env.REACT_APP_MEDIA_API;
 const MEDIA_API_CONTABO = process.env.MEDIA_API_CONTABO || process.env.REACT_APP_MEDIA_API;
+const USER_MEDIA_PROFILE_API = process.env.USER_MEDIA_PROFILE_API;
+const PROFILE_MEDIA_API = USER_MEDIA_PROFILE_API || MEDIA_API_CONTABO || MEDIA_API;
 const EMAIL_REGEX = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
 const PASSWORD_REGEX = /^(?=.*\d).{4,20}$/;
 const {
@@ -98,7 +100,7 @@ module.exports = {
                 });
             },
             function (newUser, profile, done) {
-                console.log("📤 [BACKEND] Initialisation des médias par défaut pour profil :", profile.id, "→ Contabo", MEDIA_API_CONTABO);
+                console.log("📤 [BACKEND] Initialisation des médias par défaut pour profil :", profile.id, "→ API", PROFILE_MEDIA_API);
                 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
                 const defaultPaths = [
@@ -108,7 +110,7 @@ module.exports = {
                     '/mediaprofile/default/slot-3.png'
                 ];
 
-                const baseUrl = MEDIA_API_CONTABO || MEDIA_API;
+                const baseUrl = PROFILE_MEDIA_API;
                 const createOne = (slot) =>
                     fetch(`${baseUrl}/mediaProfile/`, {
                         method: 'POST',

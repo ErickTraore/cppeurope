@@ -1,8 +1,144 @@
 .home {
   width: 100%;
-  height: auto;
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 1.25rem;
+}
+
+.home-banner {
+  width: 100%;
+  height: 1cm;
+  background: #87ceeb;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #68b7da;
+  border-bottom: 1px solid #68b7da;
+  white-space: nowrap;
+}
+
+.home-banner__marquee {
+  display: flex;
+  width: max-content;
+  animation: bannerSlide 24s linear infinite;
+}
+
+.home-banner__segment {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #063970;
+  letter-spacing: 0.01em;
+  padding-right: 0;
+}
+
+@keyframes bannerSlide {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.home-image-frame {
+  margin-top: 1.5rem;
+  width: min(980px, 94%);
+  border: 1px solid #d0d7de;
+  border-radius: 14px;
+  padding: 1.1rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-image-frame__choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  justify-items: center;
+}
+
+.home-image-choice {
+  width: 86px;
+  height: 86px;
+  border: 2px solid #dbe4ee;
+  border-radius: 50%;
+  padding: 0;
+  background: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-image-choice.is-selected {
+  border-color: #2563eb;
+}
+
+.home-image-choice__thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.home-image-frame__preview {
+  margin-top: 0.9rem;
+  padding: 0.8rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #fbfdff;
+  display: inline-flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: darkblue;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-image-frame__preview-img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-image-frame__caption {
+  margin: 0.65rem 0 0;
+  width: 82%;
+  max-width: 82%;
+  text-align: center;
+  color: #1f2937;
+}
+
+.home-image-frame__caption-line1,
+.home-image-frame__caption-line2 {
+  margin: 0;
+}
+
+.home-image-frame__caption-line1 {
+  font-weight: 700;
+}
+
+.home-image-frame__caption-line2 {
+  margin-top: 0.15rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+@media (max-width: 319px) {
+  .home-image-frame__choices {
+    grid-template-columns: 1fr;
+  }
 }

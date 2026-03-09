@@ -9,19 +9,19 @@ const initialState = {
 export const profileInfoReducer = (state = initialState, action) => {
   switch (action.type) {
     case 'FETCH_PROFILEINFO_REQUEST':
-      return { ...state, loading: true };
+      return { ...state, loading: true, error: null };
 
     case 'FETCH_PROFILEINFO_SUCCESS':
-      return { ...state, loading: false, data: action.payload };
+      return { ...state, loading: false, error: null, data: action.payload };
 
     case 'FETCH_PROFILEINFO_FAIL':
       return { ...state, loading: false, error: action.payload };
 
     case 'UPDATE_PROFILEINFO_REQUEST':
-      return { ...state, loading: true };
+      return { ...state, loading: true, error: null };
 
     case 'UPDATE_PROFILEINFO_SUCCESS':
-      return { ...state, loading: false, data: action.payload };
+      return { ...state, loading: false, error: null, data: action.payload };
 
     case 'UPDATE_PROFILEINFO_FAIL':
       return { ...state, loading: false, error: action.payload };

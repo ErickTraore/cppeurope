@@ -6,10 +6,16 @@ const usersCtrl = require('./routes/usersCtrl');
 const authMiddleware = require('./middleware/authMiddleware');
 const sessionCtrl = require('./routes/sessionCtrl');
 const profileCtrl = require('./routes/infoProfileCtrl');
-const zoomCtrl = require('./routes/zoomCtrl');
 const refreshAuthMiddleware = require('./middleware/refreshAuthMiddleware');
 const isAdminMiddleware = require('./middleware/isAdminMiddleware');
 const infoProfileCtrl = require('./routes/infoProfileCtrl');
+
+let zoomCtrl = null;
+try {
+    zoomCtrl = require('./routes/zoomCtrl');
+} catch (err) {
+    console.warn('⚠️ Route /zoom/signature désactivée: routes/zoomCtrl introuvable');
+}
 
 exports.router = (function () {
     const apiRouter = express.Router();
@@ -26,7 +32,9 @@ exports.router = (function () {
     apiRouter.route('/users/extend-session').post(refreshAuthMiddleware, usersCtrl.extendSession);
     apiRouter.route('/users/:id').delete(authMiddleware, isAdminMiddleware, usersCtrl.deleteUser);
     apiRouter.route('/users/:id').put(authMiddleware, isAdminMiddleware, usersCtrl.updateUserById);
-    apiRouter.route('/zoom/signature').get(zoomCtrl.getSignature);
+    if (zoomCtrl && typeof zoomCtrl.getSignature === 'function') {
+        apiRouter.route('/zoom/signature').get(zoomCtrl.getSignature);
+    }
     
     apiRouter.route('/users/infoProfile/user').get(authMiddleware, infoProfileCtrl.getInfoProfile);
     apiRouter.route('/users/infoProfile/:id').put(authMiddleware, infoProfileCtrl.updateInfoProfile);

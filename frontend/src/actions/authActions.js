@@ -1,6 +1,22 @@
 // src/actions/authActions.js
 
-const USER_API = process.env.REACT_APP_USER_API;
+const resolveUserApi = () => {
+  const fallback = 'http://localhost:8082/api/users';
+  const raw = (process.env.REACT_APP_USER_API || fallback).trim();
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.port === '6000') {
+      parsed.port = '8082';
+      return parsed.toString().replace(/\/$/, '');
+    }
+    return raw.replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+};
+
+const USER_API = resolveUserApi();
 
 
 export const registerRequest = () => ({

@@ -27,8 +27,82 @@ import {
 
 } from './types';
 
-const USER_API = process.env.REACT_APP_USER_API;
-const MEDIA_API = process.env.REACT_APP_MEDIA_API;
+const resolveApiBase = (value, fallback) => {
+  const raw = (value || fallback).trim();
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.port === '6000') {
+      parsed.port = '8082';
+      return parsed.toString().replace(/\/$/, '');
+    }
+    return raw.replace(/\/$/, '');
+  } catch {
+    return fallback;
+  }
+};
+
+const isFrontend3000 =
+  typeof window !== 'undefined' &&
+  window.location.hostname === 'localhost' &&
+  window.location.port === '3000';
+
+const normalizeNetworkError = (error) => {
+  if (error?.message === 'Failed to fetch') {
+    return 'API injoignable (vérifie que localhost:8082 est démarré)';
+  }
+  return error?.message || 'Erreur réseau';
+};
+
+const buildApiCandidates = (primary, fallback) => {
+  const main = resolveApiBase(primary, fallback);
+  const candidates = [main];
+
+  try {
+    const url = new URL(main);
+    if (url.hostname === 'localhost') {
+      url.hostname = '127.0.0.1';
+      candidates.push(url.toString().replace(/\/$/, ''));
+    } else if (url.hostname === '127.0.0.1') {
+      url.hostname = 'localhost';
+      candidates.push(url.toString().replace(/\/$/, ''));
+    }
+  } catch {
+    return [main];
+  }
+
+  return [...new Set(candidates)];
+};
+
+const fetchWithApiFallback = async (apiBases, endpoint, options) => {
+  let lastError = null;
+
+  for (const apiBase of apiBases) {
+    try {
+      return await fetch(`${apiBase}${endpoint}`, options);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('Failed to fetch');
+};
+
+const PROFILE_MEDIA_API = isFrontend3000
+  ? '/api/user-media-profile'
+  : resolveApiBase(
+      process.env.REACT_APP_PROFILE_MEDIA_API || process.env.REACT_APP_USER_MEDIA_PROFILE_API || process.env.REACT_APP_MEDIA_API,
+      'http://localhost:8082/api/user-media-profile'
+    );
+const USER_API_CANDIDATES = isFrontend3000
+  ? ['/api/users', 'http://localhost:8082/api/users', 'http://127.0.0.1:8082/api/users']
+  : buildApiCandidates(process.env.REACT_APP_USER_API, 'http://localhost:8082/api/users');
+const PROFILE_MEDIA_API_CANDIDATES = isFrontend3000
+  ? ['/api/user-media-profile', 'http://localhost:8082/api/user-media-profile', 'http://127.0.0.1:8082/api/user-media-profile']
+  : buildApiCandidates(
+      process.env.REACT_APP_PROFILE_MEDIA_API || process.env.REACT_APP_USER_MEDIA_PROFILE_API || process.env.REACT_APP_MEDIA_API,
+      'http://localhost:8082/api/user-media-profile'
+    );
 
 
 
@@ -42,7 +116,7 @@ export const fetchProfileInfo = (id) => async (dispatch) => {
   }
 
   try {
-    const response = await fetch(`${USER_API}/infoProfile/user`, {
+    const response = await fetchWithApiFallback(USER_API_CANDIDATES, '/infoProfile/user', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -55,7 +129,7 @@ export const fetchProfileInfo = (id) => async (dispatch) => {
 
     dispatch({ type: FETCH_PROFILEINFO_SUCCESS, payload: data });
   } catch (error) {
-    dispatch({ type: FETCH_PROFILEINFO_FAIL, payload: error.message });
+    dispatch({ type: FETCH_PROFILEINFO_FAIL, payload: normalizeNetworkError(error) });
   }
 }
 
@@ -64,7 +138,7 @@ export const createFullProfile = ({ profileInfoCreate = {}, profileMediaCreate =
   if (Object.keys(profileInfoCreate).length > 0) {
     dispatch({ type: CREATE_PROFILEINFO_REQUEST });
     try {
-      const response = await fetch(`${USER_API}/infoProfile/`, {
+        const response = await fetchWithApiFallback(USER_API_CANDIDATES, '/infoProfile/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileInfoCreate)
@@ -80,7 +154,7 @@ export const createFullProfile = ({ profileInfoCreate = {}, profileMediaCreate =
         for (const media of profileMediaCreate) {
           dispatch({ type: CREATE_PROFILEMEDIA_REQUEST });
           try {
-            const mediaResponse = await fetch(`${MEDIA_API}/mediaProfile/`, {
+            const mediaResponse = await fetchWithApiFallback(PROFILE_MEDIA_API_CANDIDATES, '/mediaProfile/', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...media, profileId })
@@ -111,7 +185,7 @@ export const updateProfileInfo = (id, formData) => async (dispatch) => {
   }
 
   try {
-    const response = await fetch(`${USER_API}/infoProfile/${id}`, {
+    const response = await fetchWithApiFallback(USER_API_CANDIDATES, `/infoProfile/${id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -125,7 +199,7 @@ export const updateProfileInfo = (id, formData) => async (dispatch) => {
 
     dispatch({ type: UPDATE_PROFILEINFO_SUCCESS, payload: data });
   } catch (error) {
-    dispatch({ type: UPDATE_PROFILEINFO_FAIL, payload: error.message });
+    dispatch({ type: UPDATE_PROFILEINFO_FAIL, payload: normalizeNetworkError(error) });
   }
 };
 
@@ -143,11 +217,11 @@ export const updateProfileMedia = (mediaId, payload) => async (dispatch) => {
     return;
   }
 
-  const url = `${MEDIA_API}/mediaProfile/${mediaId}`;
+  const url = `${PROFILE_MEDIA_API}/mediaProfile/${mediaId}`;
   console.log('🚀 Requête PUT vers :', url);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithApiFallback(PROFILE_MEDIA_API_CANDIDATES, `/mediaProfile/${mediaId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -169,7 +243,7 @@ export const updateProfileMedia = (mediaId, payload) => async (dispatch) => {
     dispatch({ type: UPDATE_PROFILEMEDIA_SUCCESS, payload: data });
   } catch (error) {
     console.error('❌ Erreur updateProfileMedia :', error.message);
-    dispatch({ type: UPDATE_PROFILEMEDIA_FAIL, payload: error.message });
+    dispatch({ type: UPDATE_PROFILEMEDIA_FAIL, payload: normalizeNetworkError(error) });
   }
 };
 
@@ -183,11 +257,11 @@ export const fetchProfileMedia = (profileId) => async (dispatch) => {
     return;
   }
 
-  const url = `${MEDIA_API}/mediaProfile/${profileId}`;
+  const url = `${PROFILE_MEDIA_API}/mediaProfile/${profileId}`;
   console.log('[fetchProfileMedia] GET', url, 'profileId=', profileId);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithApiFallback(PROFILE_MEDIA_API_CANDIDATES, `/mediaProfile/${profileId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -215,6 +289,6 @@ export const fetchProfileMedia = (profileId) => async (dispatch) => {
 
     dispatch({ type: FETCH_PROFILEMEDIA_SUCCESS, payload: slots });
   } catch (error) {
-    dispatch({ type: FETCH_PROFILEMEDIA_FAIL, payload: error.message });
+    dispatch({ type: FETCH_PROFILEMEDIA_FAIL, payload: normalizeNetworkError(error) });
   }
 };
