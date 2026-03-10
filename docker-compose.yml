@@ -21,9 +21,9 @@ services:
     image: node:20
     working_dir: /usr/src/app
     volumes:
-      - ./presseGenerale-backend:/usr/src/app
+      - ../contabo-cppeurope/presseGenerale-backend:/usr/src/app
     env_file:
-      - ./presseGenerale-backend/.env.production
+      - ../contabo-cppeurope/presseGenerale-backend/.env.production
     environment:
       NODE_ENV: production
       ALLOWED_ORIGINS: https://cppeurope.net,https://www.cppeurope.net,http://localhost:8082
